@@ -78,6 +78,7 @@ PLOT_LAYOUT = dict(
 
 from itree_sea.config import SITE_PROFILES, DEFAULT_SITE_PROFILE
 from itree_sea.simulation import project_coordinates, compute_simulation
+from itree_sea.translations import t
 import json
 
 
@@ -188,31 +189,42 @@ def build_summary(schedule_df):
 # SIDEBAR
 # ══════════════════════════════════════════════════════════════════════
 with st.sidebar:
+    if "lang" not in st.session_state:
+        st.session_state.lang = "English"
+    
+    lang_choice = st.selectbox(
+        "🌐 Language / Bahasa",
+        ["English", "Bahasa Indonesia"],
+        index=0 if st.session_state.lang == "English" else 1
+    )
+    st.session_state.lang = lang_choice
+    st.divider()
+
     st.image("https://img.icons8.com/fluency/96/deciduous-tree.png", width=60)
-    st.title("Treefolk Atlas")
-    st.caption("Carbon & Ecosystem Benefits Calculator for Southeast Asia")
+    st.title(t("title"))
+    st.caption(t("caption"))
     st.divider()
 
     uploaded = st.file_uploader(
-        "Upload planting plan or survey",
+        t("upload_label"),
         type=["dxf", "geojson", "json", "csv", "shp"],
-        help="DXF planting plans, GeoJSON/Shapefile surveys, or CSV data",
+        help=t("upload_help"),
     )
 
-    forecast_years = st.slider("Forecast years", 1, 100, 25, 1)
+    forecast_years = st.slider(t("forecast_label"), 1, 100, 25, 1)
 
     # Site profile selector
     profile_keys = list(SITE_PROFILES.keys())
-    profile_labels = [SITE_PROFILES[k].label for k in profile_keys]
+    profile_labels = [t(f"sp_{k}_label") for k in profile_keys]
     default_idx = profile_keys.index(DEFAULT_SITE_PROFILE)
     selected_profile_label = st.selectbox(
-        "🏗️ Site Profile",
+        t("site_profile_label"),
         profile_labels,
         index=default_idx,
-        help="Adjusts rainfall, pollution, and canopy parameters for your site type.",
+        help=t("site_profile_help"),
     )
     selected_profile_key = profile_keys[profile_labels.index(selected_profile_label)]
-    st.caption(SITE_PROFILES[selected_profile_key].description)
+    st.caption(t(f"sp_{selected_profile_key}_desc"))
 
     # ── Advanced mode controls ──
     advanced_rain_csv = None
@@ -221,19 +233,15 @@ with st.sidebar:
 
     if selected_profile_key == "custom_advanced":
         st.markdown("---")
-        st.markdown("#### 🔬 Advanced Parameters")
+        st.markdown(f"#### {t('adv_params_header')}")
 
-        with st.expander("🌧️ Hourly Rainfall Data", expanded=True):
-            st.markdown(
-                "Upload a CSV with a single column of **hourly rainfall** in mm. "
-                "8760 rows = 1 year. The engine will derive rain events and "
-                "compute event-based interception."
-            )
+        with st.expander(t("adv_rain_header"), expanded=True):
+            st.markdown(t("adv_rain_desc"))
             advanced_rain_csv = st.file_uploader(
-                "Hourly rainfall CSV",
+                t("adv_rain_label"),
                 type=["csv"],
                 key="rain_csv",
-                help="Single column CSV of hourly rainfall in mm (no header, or header 'rain_mm').",
+                help=t("adv_rain_help"),
             )
             if advanced_rain_csv:
                 try:
@@ -244,22 +252,16 @@ with st.sidebar:
                     n_events = derive_rain_events(rain_data)
                     total_mm = sum(rain_data)
                     st.success(
-                        f"✅ {len(rain_data)} hours loaded · "
-                        f"{total_mm:,.0f} mm total · "
-                        f"{n_events} rain events detected"
+                        t("adv_rain_success", hours=len(rain_data), mm=total_mm, events=n_events)
                     )
                     # Store for processing
                     st.session_state["advanced_rain_data"] = rain_data
                     st.session_state["advanced_rain_events"] = n_events
                 except Exception as e:
-                    st.error(f"Could not parse rainfall CSV: {e}")
+                    st.error(t("adv_rain_error", error=str(e)))
 
-        with st.expander("🏭 Ambient Pollution Concentrations", expanded=True):
-            st.markdown(
-                "Enter **annual mean** ambient concentrations in µg/m³. "
-                "The engine derives a removal multiplier from the ratio to "
-                "literature baselines."
-            )
+        with st.expander(t("adv_pollution_header"), expanded=True):
+            st.markdown(t("adv_pollution_desc"))
             from itree_sea.config import BASELINE_CONCENTRATIONS
             c1, c2 = st.columns(2)
             with c1:
@@ -283,30 +285,30 @@ with st.sidebar:
 
             from itree_sea.engine import derive_pollution_multiplier
             derived_mult = derive_pollution_multiplier(adv_pm25, adv_no2, adv_o3, adv_so2)
-            st.metric("Derived Pollution Multiplier", f"{derived_mult:.2f}×")
+            st.metric(t("adv_pollution_mult_label"), f"{derived_mult:.2f}×")
             st.session_state["advanced_pollution_multiplier"] = derived_mult
 
-        with st.expander("🌿 Canopy Parameters"):
+        with st.expander(t("adv_canopy_header")):
             advanced_lai = st.slider(
-                "Leaf Area Index (LAI)", 1.0, 10.0, 5.0, 0.5,
+                t("adv_lai_label"), 1.0, 10.0, 5.0, 0.5,
                 key="adv_lai",
-                help="Tropical broadleaf default: 5.0. Dense forest: 6-8. Open/coastal: 3-4.",
+                help=t("adv_lai_help"),
             )
             st.session_state["advanced_lai"] = advanced_lai
 
     selected_layers = []
     if uploaded and uploaded.name.lower().endswith(".dxf"):
-        with st.expander("Layer filter", expanded=True):
+        with st.expander(t("layer_filter"), expanded=True):
             layers = get_layers_from_dxf(uploaded)
             if layers:
                 selected_layers = st.multiselect(
-                    "Include layers:", layers, default=layers
+                    t("include_layers"), layers, default=layers
                 )
 
-    run_btn = st.button("▶  Run Calculation", type="primary", use_container_width=True)
-    sandbox_btn = st.button("💡 Start with Blank Sandbox", use_container_width=True)
+    run_btn = st.button(t("run_calc"), type="primary", use_container_width=True)
+    sandbox_btn = st.button(t("blank_sandbox"), use_container_width=True)
     st.divider()
-    st.caption("v0.4.0 alpha · Chave 2014 + Ketterings 2001 allometry")
+    st.caption(t("version_info"))
 
 
 # ══════════════════════════════════════════════════════════════════════
@@ -326,7 +328,7 @@ if "moved_trees" not in st.session_state:
 
 # ── Process on button click ──
 if run_btn and uploaded:
-    with st.spinner("Processing... this may take a moment for large files"):
+    with st.spinner(t("processing")):
         result, mode = process_file(uploaded, forecast_years, selected_layers, selected_profile_key)
         if result is not None and mode == "cad":
             st.session_state.schedule = result
@@ -335,7 +337,7 @@ if run_btn and uploaded:
             st.session_state.manual_trees = []
             st.session_state.removed_tree_ids = []
             st.session_state.moved_trees = {}
-            st.success(f"Processed {len(st.session_state.summary)} trees!")
+            st.success(t("processed_trees", n=len(st.session_state.summary)))
         elif result is not None:
             st.session_state.schedule = result
             st.session_state.summary = result
@@ -343,9 +345,9 @@ if run_btn and uploaded:
             st.session_state.manual_trees = []
             st.session_state.removed_tree_ids = []
             st.session_state.moved_trees = {}
-            st.success("File processed!")
+            st.success(t("file_processed"))
         else:
-            st.error("No tree data found. Check your file and layer selection.")
+            st.error(t("no_data_found"))
 elif sandbox_btn:
     st.session_state.schedule = pd.DataFrame(columns=[
         "tree_id", "block_name", "species", "x", "y", "layer",
@@ -366,12 +368,15 @@ elif sandbox_btn:
     st.session_state.manual_trees = []
     st.session_state.removed_tree_ids = []
     st.session_state.moved_trees = {}
-    st.success("Blank sandbox initialized! Go to the Map tab or toggle 'Enable Simulation Sandbox' in the sidebar.")
+    st.success(t("sandbox_init"))
 
 # ── Landing page ──
 if st.session_state.schedule is None:
     # ── Hero Section ──
-    st.markdown("""
+    title_text = t("title")
+    caption_text = t("caption")
+    tagline_text = t("hero_tagline")
+    st.markdown(f"""
     <div style="
         background: linear-gradient(135deg, #0d2818 0%, #1a4731 40%, #0b3d2e 100%);
         border: 1px solid #2d5a3d;
@@ -386,12 +391,12 @@ if st.session_state.schedule is None:
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             margin-bottom: 0.3rem;
-                ">🌳 Treefolk Atlas</h1>
+                ">🌳 {title_text}</h1>
         <p style="color: #a0c4aa; font-size: 1.15rem; margin-bottom: 0.2rem;">
-            Carbon & Ecosystem Benefit Calculator for Southeast Asian Urban Forestry
+            {caption_text}
         </p>
         <p style="color: #5a8a6a; font-size: 0.9rem;">
-            Powered by Chave 2014 allometry · 89 tropical species · UTM auto-detection · What-if sandbox
+            {tagline_text}
         </p>
     </div>
     """, unsafe_allow_html=True)
@@ -400,10 +405,10 @@ if st.session_state.schedule is None:
     fc1, fc2, fc3, fc4 = st.columns(4)
     
     feature_cards = [
-        ("📁", "Upload", "Drop a DXF planting plan or GeoJSON survey in the sidebar"),
-        ("⚡", "Calculate", "Chave 2014 allometry with 89 species, multi-year forecasts"),
-        ("🗺️", "Map & Move", "Interactive basemap, select/move/plant/remove trees"),
-        ("🧪", "Sandbox", "What-if simulations: add/remove trees, export JSON configs"),
+        ("📁", t("fc_upload_title"), t("fc_upload_desc")),
+        ("⚡", t("fc_calc_title"), t("fc_calc_desc")),
+        ("🗺️", t("fc_map_title"), t("fc_map_desc")),
+        ("🧪", t("fc_sandbox_title"), t("fc_sandbox_desc")),
     ]
     
     for col, (icon, title, desc) in zip([fc1, fc2, fc3, fc4], feature_cards):
@@ -425,37 +430,19 @@ if st.session_state.schedule is None:
     st.markdown("")
 
     # ── Supported DXF Formats ──
-    with st.expander("📋 Supported DXF Planting Plan Formats", expanded=True):
+    with st.expander(t("supported_dxf_title"), expanded=True):
         fmt_col1, fmt_col2 = st.columns(2)
         
         with fmt_col1:
-            st.markdown("##### 🏷️ Attribute-Based Blocks")
-            st.markdown("""
-            Standard blocks with `SPECIES`, `CALIPER`/`DBH` attributes.
+            st.markdown(t("attr_mode_title"))
+            st.markdown(t("dxf_attr_desc"))
             
-            | Attribute | Example |
-            |---|---|
-            | `SPECIES` | *Pterocarpus indicus* |
-            | `CALIPER` / `DBH` | `15` (cm) |
-            | `HEIGHT` (optional) | `8` (m) |
-            """)
-            
-            st.markdown("##### 🇮🇩 Indonesian Block-Name Mode")
-            st.markdown("""
-            Blocks named by Indonesian common names, auto-mapped to scientific names.
-            
-            Examples: `Mahoni` → *Swietenia macrophylla*, `Angsana` → *Pterocarpus indicus*
-            
-            Diameter is parsed from nearby MTEXT `%%C` labels.
-            """)
+            st.markdown(t("indonesian_mode_title"))
+            st.markdown(t("dxf_indo_desc"))
         
         with fmt_col2:
-            st.markdown("##### 🧹 Automatic Prefix & Suffix Clean-up")
-            st.markdown("""
-            The DXF parser automatically identifies and removes prefixes and suffixes from block names or attributes.
-            
-            This ensures that species lookup works seamlessly even when block names contain CAD reference prefixes, height suffixes, or color codes.
-            """)
+            st.markdown(t("clean_up_title"))
+            st.markdown(t("dxf_clean_desc"))
 
     # ── Species Database Coverage ──
     try:
@@ -472,74 +459,27 @@ if st.session_state.schedule is None:
         species_count = 89
         all_species = []
 
-    with st.expander(f"🌿 Species Database ({species_count} species)", expanded=False):
+    with st.expander(t("species_db_title", n=species_count), expanded=False):
         if all_species:
-            sp_df = pd.DataFrame(all_species, columns=["Scientific Name", "Common Name", "Family", "Growth Rate"])
+            cols = ["Scientific Name", "Common Name", "Family", "Growth Rate"] if st.session_state.lang == "English" else ["Nama Ilmiah", "Nama Umum", "Famili", "Laju Pertumbuhan"]
+            sp_df = pd.DataFrame(all_species, columns=cols)
             st.dataframe(sp_df, use_container_width=True, height=300)
         else:
-            st.info("Database not initialized. Run the calculation to seed species data.")
+            st.info(t("db_not_init"))
 
     # ── CAD Standardization Guide ──
-    with st.expander("📐 CAD Standardization Guide (How to prepare your DXF)", expanded=False):
-        st.markdown("""
-        To ensure accurate calculations, Treefolk Atlas requires your CAD blocks to follow these standards:
-        
-        **1. Block Attributes / Indonesian Block Names**
-        Every tree block **MUST** either have attributes or use Indonesian common names:
-        - **Attribute Mode:** The block has a `SPECIES` attribute (botanical scientific name, e.g., *Pterocarpus indicus*) and a `CALIPER` or `DBH` attribute in **centimetres** (e.g., `5`).
-        - **Indonesian Block-Name Mode:** The block is named after the Indonesian common name (e.g., "Mahoni", "Angsana", "Beringin", "Jati", "Lamtoro"). Trunk diameter is parsed from nearby MTEXT labels with `%%C` symbols.
-        
-        *Optional Attributes:*
-        - `HEIGHT`: The tree height in meters. If provided, the engine will use this instead of estimating it.
+    with st.expander(t("cad_standard_title"), expanded=False):
+        st.markdown(t("cad_standard_desc"))
 
-        **2. Layer Assignment**
-        Place your tree blocks on standard layers so the parser can find them:
-        - `L-PLNT-TREE-PROP`: Proposed/new planting
-        - `L-PLNT-TREE-EXST`: Existing trees to retain (calculates existing ecosystem benefits)
-        - `L-PLNT-TREE-RMVL`: Trees to remove (calculates the loss/negative impact of removal)
-        
-        **3. Coordinate Standardization & UTM Auto-Detection**
-        - If your CAD drawing is in local coordinates, you can manually georeference them in the **Map** tab using "Project CAD to Map Basemap" with custom anchors.
-        - **UTM Auto-Detection:** If your CAD drawing is georeferenced using **UTM Zone 48S (Jakarta, Banten, West Java)** or **UTM Zone 49S (Central/East Java, Bali)**, the system will automatically detect this.
-        - **Legend Tree Filtering:** When a georeferenced UTM drawing is detected, the parser automatically ignores legend templates or title blocks located near the origin `(0,0)` ($|x| < 10,000$ or $|y| < 100,000$) so they don't count towards carbon totals or show up in the middle of the ocean.
-        
-        **4. Common Mistakes to Avoid**
-        - Using caliper in mm instead of cm (e.g. entering 50 instead of 5).
-        - Using plain geometry (circles/points) without attributes or block names.
-        """)
-
-    with st.expander("🔬 Advanced Mode Data Standards & Integration"):
-        st.markdown(r"""
-        When using the **Custom / Advanced** site profile, ensure your custom data inputs match these specifications:
-        
-        **1. Hourly Rainfall CSV Format**
-        - File must be a flat CSV containing a single column of precipitation measurements (in millimetres).
-        - Length should ideally be **8,760 rows** (representing every hour of a 365-day year).
-        - Headers are optional. If included, use `rain_mm` or keep the first row empty.
-        - Values must be $\ge 0.0$ mm. Dry hours should be marked as `0.0`.
-        
-        **2. Ambient Air Quality Inputs**
-        Enter the measured or modeled **annual mean concentrations** in $\mu\text{g/m}^3$ to calibrate the deposition multiplier:
-        - **PM2.5:** WHO annual guideline is $5\,\mu\text{g/m}^3$ (US EPA NAAQS is $12\,\mu\text{g/m}^3$).
-        - **NO₂:** WHO annual guideline is $10\,\mu\text{g/m}^3$ (older standard $40\,\mu\text{g/m}^3$).
-        - **O₃:** WHO peak season 8-hour mean baseline is $100\,\mu\text{g/m}^3$.
-        - **SO₂:** WHO 24-hour baseline is $40\,\mu\text{g/m}^3$.
-        
-        **3. Custom Height-Diameter (H-D) Coefficients**
-        To supply custom growth models for specific species, add the following columns to `data/seed_species.csv` before running `run_seed.py`:
-        - `height_model_form`: Use `weibull` or `power`.
-        - `height_model_a`: Asymptotic max height (Weibull) or multiplier (Power).
-        - `height_model_b`: Scaling parameter (Weibull) or exponent (Power).
-        - `height_model_c`: Shape parameter (Weibull only; leave blank for Power).
-        """)
+    with st.expander(t("advanced_standards_title"), expanded=False):
+        st.markdown(t("advanced_standards_desc"))
 
     # ── Quick Start Demo ──
     st.markdown("---")
-    st.markdown("### 🚀 Quick Start")
-    st.markdown("Upload a **DXF planting plan** or **GeoJSON** in the sidebar, select layers, and click **Run Calculation** — "
-                "or try the interactive sandbox with the demo button below.")
+    st.markdown(f"### {t('quick_start')}")
+    st.markdown(t("quick_start_desc"))
     
-    if st.button("🎮 Load Demo Data (10 sample trees)", use_container_width=True, type="primary"):
+    if st.button(t("load_demo"), use_container_width=True, type="primary"):
         # Generate a small demo dataset inline
         demo_species = [
             ("Pterocarpus indicus", "Angsana", 15.0, 3.5, 106.845, -6.208),
@@ -584,7 +524,7 @@ if st.session_state.schedule is None:
         st.session_state.manual_trees = []
         st.session_state.removed_tree_ids = []
         st.session_state.moved_trees = {}
-        st.toast("Demo data loaded! Explore the tabs above.")
+        st.toast(t("demo_loaded"))
         st.rerun()
 
     st.stop()
@@ -592,9 +532,9 @@ if st.session_state.schedule is None:
 # ── We have data — show tabs ──
 # Show a simulation toggle in the sidebar
 show_sim = st.sidebar.checkbox(
-    "🧪 Enable Simulation Sandbox",
+    t("enable_sandbox"),
     value=(st.session_state.mode == "sandbox" or len(st.session_state.manual_trees) > 0 or len(st.session_state.removed_tree_ids) > 0 or len(st.session_state.moved_trees) > 0),
-    help="Apply manual plantings/removals/shifts across the entire dashboard (affects charts, summaries, exports, and map)."
+    help=t("enable_sandbox_help")
 )
 
 if show_sim:
@@ -631,16 +571,23 @@ else:
     schedule_df = st.session_state.schedule
     summary_df = st.session_state.summary
 
-tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs(["📊 Overview", "📈 Analysis", "🗺️ Map", "🧬 Species Breakdown", "📥 Export", "📘 Methodology"])
+tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
+    t("tab_overview"),
+    t("tab_analysis"),
+    t("tab_map"),
+    t("tab_species"),
+    t("tab_export"),
+    t("tab_methodology")
+])
 
 # ══════════════════════════════════════════════════════════════════════
 # TAB 1: OVERVIEW
 # ══════════════════════════════════════════════════════════════════════
 with tab1:
-    st.markdown("## Ecosystem Benefits Summary")
+    st.markdown(f"## {t('eco_summary')}")
 
     if summary_df.empty:
-        st.info("Ecosystem overview will appear here once trees are added to the sandbox or a plan is uploaded.")
+        st.info(t("overview_no_data_info"))
     else:
         # Metric cards
         c1, c2, c3, c4 = st.columns(4)
@@ -650,30 +597,30 @@ with tab1:
         if "co2_storage_kg" in summary_df.columns:
             total_co2 = summary_df["co2_storage_kg"].sum()
             total_co2_seq = summary_df.get("cumulative_co2_seq_kg", pd.Series([0])).sum()
-            c2.metric("CO₂ Stored", f"{total_co2/1000:,.1f} t")
-            c3.metric("Cumulative CO₂ Seq.", f"{total_co2_seq/1000:,.1f} t")
+            c2.metric(t("co2_stored"), f"{total_co2/1000:,.1f} {t('units_abbr_t')}")
+            c3.metric(t("cum_co2_seq"), f"{total_co2_seq/1000:,.1f} {t('units_abbr_t')}")
         else:
             total_carbon = summary_df.get("carbon_storage_kg", pd.Series([0])).sum()
             total_seq = summary_df.get("cumulative_seq_kg", pd.Series([0])).sum()
-            c2.metric("Carbon Stored", f"{total_carbon/1000:,.1f} t")
-            c3.metric("Cumulative C Seq.", f"{total_seq/1000:,.1f} t")
+            c2.metric(t("carbon_stored"), f"{total_carbon/1000:,.1f} {t('units_abbr_t')}")
+            c3.metric(t("cum_c_seq"), f"{total_seq/1000:,.1f} {t('units_abbr_t')}")
 
         match_pct = (summary_df["match_level"] == "species").mean() * 100
 
-        c1.metric("Trees", f"{n_trees:,}")
-        c4.metric("Species Match", f"{match_pct:.0f}%")
+        c1.metric(t("trees"), f"{n_trees:,}")
+        c4.metric(t("species_match"), f"{match_pct:.0f}%")
 
         # EPA Equivalencies
         if "cumulative_epa_gallons" in summary_df.columns:
-            st.markdown("### 🌎 Environmental Equivalencies")
+            st.markdown(f"### {t('env_equiv')}")
             e1, e2, e3 = st.columns(3)
             total_epa_gal = summary_df.get("cumulative_epa_gallons", pd.Series([0])).sum()
             total_epa_miles = summary_df.get("cumulative_epa_miles", pd.Series([0])).sum()
             total_o2 = summary_df.get("cumulative_o2_production_kg", pd.Series([0])).sum()
             
-            e1.metric("Oxygen Produced", f"{total_o2/1000:,.1f} t")
-            e2.metric("Gasoline Saved", f"{total_epa_gal:,.0f} gallons")
-            e3.metric("Miles Driven Avoided", f"{total_epa_miles:,.0f} miles")
+            e1.metric(t("o2_produced"), f"{total_o2/1000:,.1f} {t('units_abbr_t')}")
+            e2.metric(t("gasoline_saved"), f"{total_epa_gal:,.0f} {t('units_abbr_gallons')}")
+            e3.metric(t("miles_avoided"), f"{total_epa_miles:,.0f} {t('units_abbr_miles')}")
 
         st.markdown("---")
 
@@ -685,7 +632,7 @@ with tab1:
                          .sum().sort_values(ascending=False).reset_index())
             fig = px.pie(
                 sp_carbon, names="species", values="carbon_storage_kg",
-                title="Carbon Storage by Species",
+                title=t("carbon_by_species"),
                 color_discrete_sequence=COLORS, hole=0.45,
             )
             fig.update_layout(**PLOT_LAYOUT)
@@ -698,17 +645,18 @@ with tab1:
                                .sum().sort_values(ascending=False).reset_index())
                 fig = px.bar(
                     layer_carbon, x="layer", y="carbon_storage_kg",
-                    title="Carbon Storage by Layer",
+                    title=t("carbon_by_layer"),
                     color="layer", color_discrete_sequence=COLORS,
                 )
                 fig.update_layout(**PLOT_LAYOUT, showlegend=False)
-                fig.update_yaxes(title="Carbon (kg)")
+                y_label_str = t("carbon_stored") + " (kg)"
+                fig.update_yaxes(title=y_label_str)
                 st.plotly_chart(fig, use_container_width=True)
             else:
-                st.info("No layer data available.")
+                st.info(t("no_layer_data"))
 
         # Species table
-        st.markdown("### Species Breakdown")
+        st.markdown(f"### {t('species_efficiency_breakdown')}")
         sp_table = (summary_df.groupby("species").agg(
             count=("tree_id", "size"),
             carbon_kg=("carbon_storage_kg", "sum"),
@@ -718,6 +666,15 @@ with tab1:
         sp_table["carbon_kg"] = sp_table["carbon_kg"].round(1)
         sp_table["avg_carbon"] = sp_table["avg_carbon"].round(1)
         sp_table["stormwater_l"] = sp_table["stormwater_l"].round(0)
+        
+        # Rename columns using t()
+        sp_table.columns = [
+            t("col_species"),
+            t("col_count"),
+            t("col_total_carbon"),
+            t("col_avg_carbon"),
+            t("col_stormwater")
+        ]
         st.dataframe(sp_table, use_container_width=True, hide_index=True)
 
 
@@ -725,10 +682,10 @@ with tab1:
 # TAB 2: ANALYSIS
 # ══════════════════════════════════════════════════════════════════════
 with tab2:
-    st.markdown("## Growth & Sequestration Analysis")
+    st.markdown(f"## {t('growth_analysis')}")
 
     if summary_df.empty:
-        st.info("Growth and sequestration graphs will appear here once trees are added to the sandbox or a plan is uploaded.")
+        st.info(t("analysis_no_data_info"))
     elif "year" in schedule_df.columns:
         # Carbon growth curve
         yearly = (schedule_df.groupby("year")
@@ -745,17 +702,17 @@ with tab2:
         fig = go.Figure()
         fig.add_trace(go.Scatter(
             x=yearly["year"], y=yearly["carbon_t"],
-            mode="lines+markers", name="Carbon Stored (t)",
+            mode="lines+markers", name=t("carbon_stored_t"),
             line=dict(color="#2ecc71", width=3),
             fill="tozeroy", fillcolor="rgba(46,204,113,0.15)",
         ))
         fig.update_layout(
-            title="Total Carbon Storage Over Time",
-            xaxis_title="Year", yaxis_title="Tonnes",
+            title=t("total_c_stored_over_time"),
+            xaxis_title=t("year"), yaxis_title=t("tonnes"),
             **PLOT_LAYOUT,
         )
         st.plotly_chart(fig, use_container_width=True)
-        st.caption("**Methodology:** Aboveground biomass (AGB) uses Chave et al. (2014) pantropical allometry with Ketterings et al. (2001) regional wood densities. Belowground biomass is estimated as 26% of AGB.")
+        st.caption(t("methodology_caption_agb"))
 
         # Sequestration & Oxygen curves
         col1, col2 = st.columns(2)
@@ -764,43 +721,43 @@ with tab2:
             fig2 = go.Figure()
             fig2.add_trace(go.Scatter(
                 x=yearly["year"], y=yearly["co2_seq"],
-                mode="lines+markers", name="CO₂ Seq. (kg/yr)",
+                mode="lines+markers", name=t("co2_seq_yr"),
                 line=dict(color="#3498db", width=3),
                 fill="tozeroy", fillcolor="rgba(52,152,219,0.15)",
             ))
             fig2.add_trace(go.Scatter(
                 x=yearly["year"], y=yearly["o2_prod"],
-                mode="lines+markers", name="O₂ Prod. (kg/yr)",
+                mode="lines+markers", name=t("o2_prod_yr"),
                 line=dict(color="#e74c3c", width=3),
                 fill="tonexty", fillcolor="rgba(231,76,60,0.15)",
             ))
             fig2.update_layout(
-                title="Annual CO₂ Sequestration vs O₂ Production",
-                xaxis_title="Year", yaxis_title="kg/year",
+                title=t("annual_co2_vs_o2"),
+                xaxis_title=t("year"), yaxis_title=t("kg_yr"),
                 hovermode="x unified",
                 **PLOT_LAYOUT,
             )
             st.plotly_chart(fig2, use_container_width=True)
-            st.caption("**Methodology:** Oxygen production is calculated stoichiometrically from net carbon sequestration (O₂ = Net C Seq × 32/12) per Nowak et al. (2007).")
+            st.caption(t("methodology_caption_o2"))
 
         with col2:
             fig3 = go.Figure()
             fig3.add_trace(go.Scatter(
                 x=yearly["year"], y=yearly["storm"] / 1000,
-                mode="lines+markers", name="Stormwater (kL/yr)",
+                mode="lines+markers", name=t("stormwater_kl_yr"),
                 line=dict(color="#1abc9c", width=3),
                 fill="tozeroy", fillcolor="rgba(26,188,156,0.15)",
             ))
             fig3.update_layout(
-                title="Stormwater Interception",
-                xaxis_title="Year", yaxis_title="kL/year",
+                title=t("stormwater_interception"),
+                xaxis_title=t("year"), yaxis_title=t("kl_yr"),
                 **PLOT_LAYOUT,
             )
             st.plotly_chart(fig3, use_container_width=True)
-            st.caption("**Methodology:** Stormwater interception is modeled based on total annual canopy surface area capturing hourly rain events, capped by maximum storage capacity.")
+            st.caption(t("methodology_caption_stormwater"))
 
         # Stacked area by species
-        st.markdown("### Carbon Growth by Species")
+        st.markdown(f"### {t('carbon_growth_by_species')}")
         top_species = (summary_df.groupby("species")["carbon_storage_kg"]
                        .sum().nlargest(8).index.tolist())
         sp_yearly = schedule_df[schedule_df["species"].isin(top_species)]
@@ -810,22 +767,23 @@ with tab2:
 
         fig4 = px.area(
             sp_yearly_agg, x="year", y="carbon_t", color="species",
-            title="Carbon Storage by Top 8 Species",
+            title=t("carbon_storage_top8"),
             color_discrete_sequence=COLORS,
         )
         fig4.update_layout(**PLOT_LAYOUT)
-        fig4.update_yaxes(title="Tonnes")
+        fig4.update_yaxes(title=t("tonnes"))
+        fig4.update_xaxes(title=t("year"))
         st.plotly_chart(fig4, use_container_width=True)
-        st.caption("**Methodology:** When height is not field-measured, it is modeled using the Feldpausch et al. (2012) 3-parameter Weibull function to capture biological growth limits.")
+        st.caption(t("methodology_caption_height"))
     else:
-        st.info("Time-series analysis requires schedule data from DXF processing.")
+        st.info(t("time_series_required_dxf"))
 
 
 # ══════════════════════════════════════════════════════════════════════
 # TAB 3: MAP
 # ══════════════════════════════════════════════════════════════════════
 with tab3:
-    st.markdown("## Tree Location Map & Simulation Sandbox")
+    st.markdown(f"## {t('map_title')}")
 
     # If we have trees (either baseline or simulation)
     if "x" in summary_df.columns and "y" in summary_df.columns and not summary_df.empty:
@@ -835,17 +793,22 @@ with tab3:
         # Interchangeable basemap styles selection at the top of the map
         col_m_title, col_m_style = st.columns([2, 1])
         with col_m_style:
+            basemap_options = [
+                t("basemap_dark"),
+                t("basemap_osm"),
+                t("basemap_light")
+            ]
             basemap_style = st.selectbox(
-                "🗺️ Basemap Style",
-                ["CartoDB Dark Matter", "OpenStreetMap (Standard)", "CartoDB Positron (Light)"],
+                t("basemap_style"),
+                basemap_options,
                 index=0,
                 key="basemap_style_select",
-                help="Choose the background map theme (OpenStreetMap is highly visible)."
+                help=t("basemap_style_help")
             )
         style_map = {
-            "CartoDB Dark Matter": "carto-darkmatter",
-            "OpenStreetMap (Standard)": "open-street-map",
-            "CartoDB Positron (Light)": "carto-positron"
+            t("basemap_dark"): "carto-darkmatter",
+            t("basemap_osm"): "open-street-map",
+            t("basemap_light"): "carto-positron"
         }
         style_key = style_map[basemap_style]
 
@@ -876,53 +839,54 @@ with tab3:
         if not is_geo:
             # Set default depending on UTM detection
             default_proj_idx = 0 if is_utm else 2
-            with st.expander("🗺️ Georeference CAD Coordinates onto Basemap", expanded=is_utm):
+            with st.expander(t("georef_cad"), expanded=is_utm):
                 col_geo1, col_geo2 = st.columns(2)
                 # If UTM is detected, we check Project CAD by default
-                use_basemap = col_geo1.checkbox("Project CAD to Map Basemap", value=is_utm)
+                use_basemap = col_geo1.checkbox(t("project_cad"), value=is_utm)
                 
                 # Projection system dropdown
                 projection_system = col_geo2.selectbox(
-                    "Coordinate System / Projection Type:",
+                    t("coordinate_system"),
                     [
-                        "UTM Zone 48S - WGS 84 (Jakarta, BSD, Banten)",
-                        "UTM Zone 49S - WGS 84 (Central/East Java, Yogyakarta, Bali)",
-                        "Flat Earth Center Anchor (Manual)"
+                        t("utm_48s"),
+                        t("utm_49s"),
+                        t("flat_earth")
                     ],
                     index=default_proj_idx
                 )
                 
                 if is_utm:
-                    st.success("✅ **Georeferenced UTM Coordinates Detected!** Drawing matches UTM range. Projection is auto-applied.")
+                    st.success(t("georef_detected"))
                 
                 if use_basemap:
                     col_geo3, col_geo4 = st.columns(2)
-                    if "UTM" in projection_system:
-                        st.info("ℹ️ UTM coordinate systems project raw coordinates to precise Lat/Lon using EPSG parameters. Center anchor is determined by the projection.")
+                    if "UTM" in projection_system or "Zona" in projection_system or "Zone" in projection_system:
+                        st.info(t("utm_info"))
                         anchor_mode = "UTM"
                     else:
-                        anchor_mode = col_geo3.selectbox("Align Anchor to:", ["Center of Trees", "CAD Origin (0,0)"])
+                        anchor_mode_display = col_geo3.selectbox(t("align_anchor"), [t("align_center"), t("align_origin")])
+                        anchor_mode = "Center of Trees" if anchor_mode_display == t("align_center") else "CAD Origin (0,0)"
                         col_geo_lat, col_geo_lon = st.columns(2)
-                        anchor_lat = col_geo_lat.number_input("Anchor Latitude (Jakarta center)", value=-6.2088, format="%.6f")
-                        anchor_lon = col_geo_lon.number_input("Anchor Longitude (Jakarta center)", value=106.8456, format="%.6f")
+                        anchor_lat = col_geo_lat.number_input(t("anchor_lat"), value=-6.2088, format="%.6f")
+                        anchor_lon = col_geo_lon.number_input(t("anchor_lon"), value=106.8456, format="%.6f")
                         
                     col_geo5, col_geo6 = st.columns(2)
                     unit_selection = col_geo5.selectbox(
-                        "CAD Unit Scale (Convert to Meters)",
-                        ["Meters (1.0)", "Centimeters (0.01)", "Millimeters (0.001)", "Custom Scale Factor"]
+                        t("cad_scale"),
+                        [t("scale_meters"), t("scale_cms"), t("scale_mms"), t("scale_custom")]
                     )
-                    if unit_selection == "Meters (1.0)":
+                    if unit_selection == t("scale_meters"):
                         scale_factor = 1.0
-                    elif unit_selection == "Centimeters (0.01)":
+                    elif unit_selection == t("scale_cms"):
                         scale_factor = 0.01
-                    elif unit_selection == "Millimeters (0.001)":
+                    elif unit_selection == t("scale_mms"):
                         scale_factor = 0.001
                     else:
-                        scale_factor = col_geo5.number_input("Custom multiplier:", value=1.0, format="%.6f")
+                        scale_factor = col_geo5.number_input(t("custom_mult"), value=1.0, format="%.6f")
                         
                     col_geo7, col_geo8 = st.columns(2)
-                    easting_shift = col_geo7.slider("East-West Shift (meters)", min_value=-1000.0, max_value=1000.0, value=0.0, step=1.0)
-                    northing_shift = col_geo8.slider("North-South Shift (meters)", min_value=-1000.0, max_value=1000.0, value=0.0, step=1.0)
+                    easting_shift = col_geo7.slider(t("east_west_shift"), min_value=-1000.0, max_value=1000.0, value=0.0, step=1.0)
+                    northing_shift = col_geo8.slider(t("north_south_shift"), min_value=-1000.0, max_value=1000.0, value=0.0, step=1.0)
 
         # Prepare map dataframe
         # Filter out removed trees from map so they disappear
@@ -945,7 +909,7 @@ with tab3:
                     mapbox_style=style_key,
                     zoom=15,
                     color_discrete_sequence=COLORS,
-                    title="Tree Survey Map (Geographic)",
+                    title=t("map_title_geo"),
                 )
                 fig.update_layout(**PLOT_LAYOUT, height=600, clickmode="event+select")
                 event_data = st.plotly_chart(fig, use_container_width=True, on_select="rerun")
@@ -969,7 +933,7 @@ with tab3:
                     mapbox_style=style_key,
                     zoom=17,
                     color_discrete_sequence=COLORS,
-                    title="Georeferenced CAD Tree Plan on Map",
+                    title=t("map_title_cad"),
                 )
                 fig.update_layout(**PLOT_LAYOUT, height=600, clickmode="event+select")
                 fig.update_layout(mapbox=dict(
@@ -982,7 +946,7 @@ with tab3:
                     map_df, x="x", y="y", color="species",
                     size="dbh_cm",
                     hover_data=["tree_id", "species", "block_name", "dbh_cm", "carbon_storage_kg"],
-                    title="Tree Positions (CAD local coordinates)",
+                    title=t("map_title_local"),
                     color_discrete_sequence=COLORS,
                 )
                 fig.update_layout(**PLOT_LAYOUT, height=600, clickmode="event+select")
@@ -1027,14 +991,14 @@ with tab3:
                         selected_y = orig_row.iloc[0]["y"]
 
             if len(selected_tree_ids) > 1:
-                st.markdown("### 🎛️ Group Actions")
-                st.info(f"📍 Selected **{len(selected_tree_ids)} trees** on the map.")
+                st.markdown(t("group_actions"))
+                st.info(t("selected_trees_count", n=len(selected_tree_ids)))
                 
                 g_col1, g_col2 = st.columns(2)
                 
                 with g_col1:
-                    st.markdown("#### 🗑️ Group Removal")
-                    if st.button("🗑️ Remove All Selected Trees", use_container_width=True, type="primary"):
+                    st.markdown(t("group_removal"))
+                    if st.button(t("remove_all_selected"), use_container_width=True, type="primary"):
                         removed_count = 0
                         cancelled_count = 0
                         for tid in selected_tree_ids:
@@ -1046,16 +1010,16 @@ with tab3:
                                 if tid not in st.session_state.removed_tree_ids:
                                     st.session_state.removed_tree_ids.append(tid)
                                     removed_count += 1
-                        st.toast(f"Removed {removed_count} baseline and cancelled {cancelled_count} manual trees.")
+                        st.toast(t("removed_baseline_cancelled_manual", r=removed_count, c=cancelled_count))
                         st.rerun()
                         
                 with g_col2:
-                    st.markdown("#### 🚀 Group Move")
-                    st.write("Shift all selected trees by a delta offset (in meters / CAD drawing units):")
-                    g_dx = st.number_input("Delta X (horizontal shift):", value=0.0, step=1.0, key="group_move_dx")
-                    g_dy = st.number_input("Delta Y (vertical shift):", value=0.0, step=1.0, key="group_move_dy")
+                    st.markdown(t("group_move"))
+                    st.write(t("shift_selected_delta"))
+                    g_dx = st.number_input(t("delta_x"), value=0.0, step=1.0, key="group_move_dx")
+                    g_dy = st.number_input(t("delta_y"), value=0.0, step=1.0, key="group_move_dy")
                     
-                    if st.button("🚀 Apply Shift to Selected Trees", use_container_width=True):
+                    if st.button(t("apply_shift"), use_container_width=True):
                         if g_dx != 0.0 or g_dy != 0.0:
                             moved_count = 0
                             for tid in selected_tree_ids:
@@ -1078,12 +1042,12 @@ with tab3:
                                     if not is_manual:
                                         st.session_state.moved_trees[tid] = (new_x, new_y)
                                     moved_count += 1
-                            st.toast(f"Shifted {moved_count} trees by X: {g_dx:.2f}, Y: {g_dy:.2f}")
+                            st.toast(t("shifted_trees", n=moved_count, x=g_dx, y=g_dy))
                             st.rerun()
 
             elif selected_tree_id is not None:
-                st.markdown("### 🎛️ Interactive Tree Actions")
-                st.info(f"📍 Selected **Tree #{selected_tree_id}** (`{selected_species}`, DBH: `{selected_dbh}cm`) at position `X: {selected_x:.4f}, Y: {selected_y:.4f}`")
+                st.markdown(t("interactive_actions"))
+                st.info(t("selected_tree_info", tid=selected_tree_id, species=selected_species, dbh=selected_dbh, x=selected_x, y=selected_y))
                 
                 sel_col1, sel_col2, sel_col3 = st.columns(3)
                 
@@ -1093,32 +1057,32 @@ with tab3:
                 with sel_col1:
                     if is_baseline:
                         if selected_tree_id in st.session_state.removed_tree_ids:
-                            if st.button("♻️ Restore Selected Tree", use_container_width=True):
+                            if st.button(t("restore_tree"), use_container_width=True):
                                 st.session_state.removed_tree_ids.remove(selected_tree_id)
-                                st.toast(f"Restored Tree #{selected_tree_id}")
+                                st.toast(t("restored_tree", tid=selected_tree_id))
                                 st.rerun()
                         else:
-                            if st.button("🗑️ Remove Selected Tree", use_container_width=True, type="primary"):
+                            if st.button(t("remove_tree"), use_container_width=True, type="primary"):
                                 st.session_state.removed_tree_ids.append(selected_tree_id)
-                                st.toast(f"Removed Tree #{selected_tree_id}")
+                                st.toast(t("marked_removed", tid=selected_tree_id))
                                 st.rerun()
                     elif is_manual:
-                        if st.button("🗑️ Cancel Manual Tree", use_container_width=True, type="primary"):
+                        if st.button(t("cancel_manual"), use_container_width=True, type="primary"):
                             st.session_state.manual_trees = [t for t in st.session_state.manual_trees if t["tree_id"] != selected_tree_id]
-                            st.toast(f"Cancelled manual planting of Tree #{selected_tree_id}")
+                            st.toast(t("planting_cancelled"))
                             st.rerun()
                             
                 with sel_col2:
-                    if st.button("📍 Pre-fill Plant Form Here", use_container_width=True):
+                    if st.button(t("prefill_form"), use_container_width=True):
                         st.session_state["prefilled_x"] = float(selected_x)
                         st.session_state["prefilled_y"] = float(selected_y)
                         st.session_state["prefilled_species"] = selected_species
                         st.session_state["prefilled_dbh"] = float(selected_dbh)
-                        st.toast("Pre-filled planting form coordinates!")
+                        st.toast(t("prefill_form"))
                         st.rerun()
 
                 with sel_col3:
-                    if st.button("🌱 Quick-Plant Similar Nearby", use_container_width=True):
+                    if st.button(t("quick_plant"), use_container_width=True):
                         next_id = 9000 + len(st.session_state.manual_trees) + 1
                         offset = 0.0001 if (is_geo or use_basemap) else 2.0
                         st.session_state.manual_trees.append({
@@ -1130,11 +1094,11 @@ with tab3:
                             "y": float(selected_y) + offset,
                             "condition": "good"
                         })
-                        st.toast(f"Quick-planted new {selected_species} nearby!")
+                        st.toast(t("successfully_planted", sp=selected_species))
                         st.rerun()
 
                 # Add precise single tree move tool
-                st.markdown("#### 📍 Move Tree Tool")
+                st.markdown(t("move_tree_tool"))
                 
                 # Track selection to avoid retaining offsets from previously selected trees
                 if "last_selected_tree_id" not in st.session_state or st.session_state.last_selected_tree_id != selected_tree_id:
@@ -1142,24 +1106,24 @@ with tab3:
                     st.session_state.sel_tree_orig_x = float(selected_x)
                     st.session_state.sel_tree_orig_y = float(selected_y)
 
-                m_tab1, m_tab2 = st.tabs(["🔢 Input Absolute Coordinates", "🎚️ Sliders Nudge"])
+                m_tab1, m_tab2 = st.tabs([t("input_abs"), t("sliders_nudge")])
 
                 with m_tab1:
                     col_mx, col_my = st.columns(2)
                     new_x_val = col_mx.number_input(
-                        "New X Coordinate (CAD or Lon):", 
+                        t("new_x_coord"), 
                         value=float(selected_x), 
                         format="%.5f",
                         key=f"abs_x_{selected_tree_id}"
                     )
                     new_y_val = col_my.number_input(
-                        "New Y Coordinate (CAD or Lat):", 
+                        t("new_y_coord"), 
                         value=float(selected_y), 
                         format="%.5f",
                         key=f"abs_y_{selected_tree_id}"
                     )
                     
-                    if st.button("💾 Apply Coordinates Move", key=f"btn_abs_{selected_tree_id}", use_container_width=True):
+                    if st.button(t("apply_coords_move"), key=f"btn_abs_{selected_tree_id}", use_container_width=True):
                         if is_manual:
                             for t in st.session_state.manual_trees:
                                 if t["tree_id"] == selected_tree_id:
@@ -1171,11 +1135,11 @@ with tab3:
                         
                         st.session_state.sel_tree_orig_x = new_x_val
                         st.session_state.sel_tree_orig_y = new_y_val
-                        st.toast(f"Moved Tree #{selected_tree_id} to X: {new_x_val:.5f}, Y: {new_y_val:.5f}")
+                        st.toast(t("restored_tree", tid=selected_tree_id))
                         st.rerun()
 
                 with m_tab2:
-                    st.write("Drag sliders to nudge the tree coordinates (offset in meters / CAD units):")
+                    st.write(t("nudge_sliders_desc"))
                     
                     is_currently_geo = (is_geo or (use_basemap and "UTM" not in projection_system))
                     if is_currently_geo:
@@ -1188,7 +1152,7 @@ with tab3:
                         slider_step = 0.5
                     
                     slide_x = st.slider(
-                        "Move East-West (X):", 
+                        t("move_east_west"), 
                         min_value=slider_min, 
                         max_value=slider_max, 
                         value=0.0, 
@@ -1196,7 +1160,7 @@ with tab3:
                         key=f"slider_x_{selected_tree_id}"
                     )
                     slide_y = st.slider(
-                        "Move North-South (Y):", 
+                        t("move_north_south"), 
                         min_value=slider_min, 
                         max_value=slider_max, 
                         value=0.0, 
@@ -1208,7 +1172,7 @@ with tab3:
                     preview_y = st.session_state.sel_tree_orig_y + slide_y
                     
                     if slide_x != 0.0 or slide_y != 0.0:
-                        st.markdown(f"Nudging preview: `X: {preview_x:.5f}` (Shift: `{slide_x:+.5f}`), `Y: {preview_y:.5f}` (Shift: `{slide_y:+.5f}`)")
+                        st.markdown(t("nudging_preview", x=preview_x, dx=slide_x, y=preview_y, dy=slide_y))
                         
                         # Live update during slider drag
                         if is_manual:
@@ -1220,23 +1184,23 @@ with tab3:
                         else:
                             st.session_state.moved_trees[selected_tree_id] = (preview_x, preview_y)
                         
-                        if st.button("💾 Lock Nudge Position", key=f"btn_nudge_{selected_tree_id}", use_container_width=True):
+                        if st.button(t("lock_nudge"), key=f"btn_nudge_{selected_tree_id}", use_container_width=True):
                             st.session_state.sel_tree_orig_x = preview_x
                             st.session_state.sel_tree_orig_y = preview_y
-                            st.toast(f"Locked position shift for Tree #{selected_tree_id}")
+                            st.toast(t("lock_nudge"))
                             st.rerun()
         else:
-            st.info("All trees have been removed. Use the form below to plant trees!")
+            st.info(t("all_removed_info"))
     else:
-        st.info("No active trees to display. Start by uploading a planting plan or plant a tree manually below.")
+        st.info(t("no_active_trees_info"))
 
     st.markdown("---")
-    st.markdown("### 🧪 What-If Simulation Sandbox Panel")
+    st.markdown(t("sandbox_panel"))
     
     sim_col1, sim_col2 = st.columns([1, 1])
 
     with sim_col1:
-        st.markdown("#### ➕ Plant Tree (Simulated Addition)")
+        st.markdown(t("plant_tree_sim"))
         # Load all species from database
         try:
             from itree_sea.config import DATABASE_PATH
@@ -1259,18 +1223,26 @@ with tab3:
             sp_idx = db_species.index(pref_species)
 
         with st.form("add_tree_form_tab3", clear_on_submit=True):
-            sp = st.selectbox("Botanical Species", db_species, index=sp_idx)
+            sp = st.selectbox(t("botanical_species"), db_species, index=sp_idx)
             col_d, col_h = st.columns(2)
-            dbh = col_d.number_input("DBH (cm)", min_value=1.0, max_value=250.0, value=pref_dbh, step=1.0)
-            h = col_h.number_input("Height (m) [0 for default]", min_value=0.0, max_value=100.0, value=0.0, step=1.0)
+            dbh = col_d.number_input(t("dbh_label"), min_value=1.0, max_value=250.0, value=pref_dbh, step=1.0)
+            h = col_h.number_input(t("height_label"), min_value=0.0, max_value=100.0, value=0.0, step=1.0)
             
             col_x, col_y = st.columns(2)
-            x_coord = col_x.number_input("X Coordinate (CAD or Lon)", value=pref_x, format="%.5f")
-            y_coord = col_y.number_input("Y Coordinate (CAD or Lat)", value=pref_y, format="%.5f")
+            x_coord = col_x.number_input(t("x_label"), value=pref_x, format="%.5f")
+            y_coord = col_y.number_input(t("y_label"), value=pref_y, format="%.5f")
             
-            cond = st.selectbox("Tree Condition", ["Excellent", "Good", "Fair", "Poor"], index=1)
+            cond_options = [t("cond_excellent"), t("cond_good"), t("cond_fair"), t("cond_poor")]
+            cond_map = {
+                t("cond_excellent"): "excellent",
+                t("cond_good"): "good",
+                t("cond_fair"): "fair",
+                t("cond_poor"): "poor"
+            }
+            cond_display = st.selectbox(t("tree_condition"), cond_options, index=1)
+            cond = cond_map[cond_display]
             
-            submit_add = st.form_submit_button("🌱 Plant Tree")
+            submit_add = st.form_submit_button(t("plant_tree_btn"))
             if submit_add:
                 # Assign new tree_id
                 next_id = 9000 + len(st.session_state.manual_trees) + 1
@@ -1283,11 +1255,11 @@ with tab3:
                     "y": y_coord,
                     "condition": cond.lower()
                 })
-                st.success(f"Successfully planted {sp}!")
+                st.success(t("successfully_planted", sp=sp))
                 st.rerun()
 
         # Remove trees
-        st.markdown("#### ❌ Remove Tree (Simulated Removal)")
+        st.markdown(t("remove_tree_sim"))
         # Show dropdown of baseline trees
         baseline_sum = st.session_state.summary
         if baseline_sum is not None and not baseline_sum.empty:
@@ -1297,19 +1269,19 @@ with tab3:
                     f"{row['tree_id']}: {row['species']} (DBH: {row['dbh_cm']}cm, Block: {row['block_name']})"
                     for _, row in active_trees.iterrows()
                 ]
-                selected_remove_str = st.selectbox("Select tree to remove", tree_options)
-                if st.button("🗑️ Remove Tree"):
+                selected_remove_str = st.selectbox(t("select_tree_remove"), tree_options)
+                if st.button(t("remove_tree_btn")):
                     tid = int(selected_remove_str.split(":")[0])
                     st.session_state.removed_tree_ids.append(tid)
-                    st.success(f"Marked tree #{tid} as removed.")
+                    st.success(t("marked_removed", tid=tid))
                     st.rerun()
             else:
-                st.info("No active trees left to remove.")
+                st.info(t("no_trees_to_remove"))
         else:
-            st.info("Upload a planting plan first to enable tree removal simulation.")
+            st.info(t("upload_first_remove"))
 
         # Export/Import Sandbox Configuration
-        st.markdown("#### 💾 Export / Import Sandbox Simulation")
+        st.markdown(t("export_import_sim"))
         sim_data_to_save = {
             "manual_trees": st.session_state.manual_trees,
             "removed_tree_ids": st.session_state.removed_tree_ids,
@@ -1317,14 +1289,14 @@ with tab3:
         }
         json_str = json.dumps(sim_data_to_save, indent=2)
         st.download_button(
-            label="📥 Export Sandbox Config (.json)",
+            label=t("export_sandbox_btn"),
             data=json_str,
             file_name="treefolk_atlas_simulation.json",
             mime="application/json",
             use_container_width=True
         )
         
-        uploaded_sim = st.file_uploader("📤 Load Sandbox Config (.json)", type=["json"], key="uploader_tab3")
+        uploaded_sim = st.file_uploader(t("load_sandbox_btn"), type=["json"], key="uploader_tab3")
         if uploaded_sim is not None:
             try:
                 loaded_data = json.load(uploaded_sim)
@@ -1334,63 +1306,80 @@ with tab3:
                     st.session_state.moved_trees = {
                         int(k): v for k, v in loaded_data.get("moved_trees", {}).items()
                     }
-                    st.success("Simulation config loaded successfully!")
+                    st.success(t("sim_loaded_success"))
                     st.rerun()
                 else:
-                    st.error("Invalid file format. Make sure it has manual_trees and removed_tree_ids.")
+                    st.error(t("invalid_file_format"))
             except Exception as e:
-                st.error(f"Error loading config: {e}")
+                st.error(t("error_loading_config", error=str(e)))
 
     with sim_col2:
-        st.markdown("#### 📋 Active Interventions Checklist")
+        st.markdown(t("active_interventions"))
         
         # Clear button
         if st.session_state.manual_trees or st.session_state.removed_tree_ids or st.session_state.moved_trees:
-            if st.button("🧹 Reset Sandbox Interventions", use_container_width=True):
+            if st.button(t("reset_sandbox"), use_container_width=True):
                 st.session_state.manual_trees = []
                 st.session_state.removed_tree_ids = []
                 st.session_state.moved_trees = {}
-                st.success("Cleared all sandbox data.")
+                st.success(t("cleared_sandbox"))
                 st.rerun()
 
         # Display manual plantings table
         if st.session_state.manual_trees:
-            st.markdown("**🌱 Manually Planted Trees:**")
+            st.markdown(t("manually_planted"))
             plant_df = pd.DataFrame(st.session_state.manual_trees)
-            st.dataframe(plant_df[["tree_id", "species", "dbh_cm", "height_m", "x", "y", "condition"]], use_container_width=True, hide_index=True)
+            plant_df_display = plant_df[["tree_id", "species", "dbh_cm", "height_m", "x", "y", "condition"]].copy()
+            plant_df_display.columns = [
+                t("col_tree_id"),
+                t("col_species"),
+                t("dbh_label"),
+                t("height_label").split("[")[0].strip(),
+                t("col_x"),
+                t("col_y"),
+                t("col_condition")
+            ]
+            st.dataframe(plant_df_display, use_container_width=True, hide_index=True)
             
             tree_to_delete = st.selectbox(
-                "Cancel a manual planting:",
+                t("cancel_manual_planting"),
                 [f"{t['tree_id']}: {t['species']} ({t['dbh_cm']}cm)" for t in st.session_state.manual_trees]
             )
-            if st.button("Delete Planting"):
+            if st.button(t("delete_planting_btn")):
                 del_id = int(tree_to_delete.split(":")[0])
                 st.session_state.manual_trees = [t for t in st.session_state.manual_trees if t["tree_id"] != del_id]
-                st.success("Planting cancelled.")
+                st.success(t("planting_cancelled"))
                 st.rerun()
 
         # Display removals table
         if st.session_state.removed_tree_ids and baseline_sum is not None and not baseline_sum.empty:
-            st.markdown("**🗑️ Manually Removed Trees:**")
+            st.markdown(t("manually_removed"))
             rem_df = baseline_sum[baseline_sum["tree_id"].isin(st.session_state.removed_tree_ids)]
-            st.dataframe(rem_df[["tree_id", "species", "dbh_cm", "block_name"]], use_container_width=True, hide_index=True)
+            rem_df_display = rem_df[["tree_id", "species", "dbh_cm", "block_name"]].copy()
+            rem_df_display.columns = [
+                t("col_tree_id"),
+                t("col_species"),
+                t("dbh_label"),
+                t("col_block")
+            ]
+            st.dataframe(rem_df_display, use_container_width=True, hide_index=True)
             
             tree_to_restore = st.selectbox(
-                "Restore a removed tree:",
+                t("restore_removed_tree"),
                 [f"{tid}" for tid in st.session_state.removed_tree_ids]
             )
-            if st.button("Restore Tree"):
+            if st.button(t("restore_tree_btn")):
                 restore_id = int(tree_to_restore)
                 st.session_state.removed_tree_ids.remove(restore_id)
-                st.success(f"Restored tree #{restore_id}.")
+                st.success(t("restored_tree", tid=restore_id))
                 st.rerun()
 
         if not st.session_state.manual_trees and not st.session_state.removed_tree_ids:
-            st.info("No active interventions. Use the left column to plant or remove trees.")
+            st.info(t("no_active_interventions"))
 
         # Show simulation delta stats
         if show_sim:
-            st.markdown("#### 📊 Ecosystem Benefit Delta (Baseline vs Sandbox)")
+            st.markdown(t("sim_delta_stats"))
             
             def safe_sum(df, col):
                 if df is not None and not df.empty and col in df.columns:
@@ -1424,29 +1413,29 @@ with tab3:
             pm25_delta = sim_pm25 - base_pm25
 
             col_m1, col_m2 = st.columns(2)
-            col_m1.metric("Tree Count", f"{sim_count} trees", f"{count_delta:+d} trees" if count_delta != 0 else None)
-            col_m2.metric("Carbon Stored", f"{sim_c:.2f} t", f"{c_delta:+.2f} t" if c_delta != 0 else None)
+            col_m1.metric(t("tree_count"), f"{sim_count} {t('trees').lower()}", f"{count_delta:+d} {t('trees').lower()}" if count_delta != 0 else None)
+            col_m2.metric(t("carbon_stored"), f"{sim_c:.2f} {t('units_abbr_t')}", f"{c_delta:+.2f} {t('units_abbr_t')}" if c_delta != 0 else None)
             
             col_m3, col_m4 = st.columns(2)
-            col_m3.metric("Stormwater Intercepted", f"{sim_storm:.2f} kL", f"{storm_delta:+.2f} kL" if storm_delta != 0 else None)
-            col_m4.metric("CO₂ Equivalent Stored", f"{sim_co2:.2f} t", f"{co2_delta:+.2f} t" if co2_delta != 0 else None)
+            col_m3.metric(t("stormwater_intercepted"), f"{sim_storm:.2f} kL", f"{storm_delta:+.2f} kL" if storm_delta != 0 else None)
+            col_m4.metric(t("co2_equivalent_stored"), f"{sim_co2:.2f} {t('units_abbr_t')}", f"{co2_delta:+.2f} {t('units_abbr_t')}" if co2_delta != 0 else None)
 
             col_m5, col_m6 = st.columns(2)
-            col_m5.metric("Oxygen Production", f"{sim_o2:.2f} t", f"{o2_delta:+.2f} t" if o2_delta != 0 else None)
-            col_m6.metric("PM2.5 Removed", f"{sim_pm25:.2f} kg", f"{pm25_delta:+.2f} kg" if pm25_delta != 0 else None)
+            col_m5.metric(t("oxygen_production"), f"{sim_o2:.2f} {t('units_abbr_t')}", f"{o2_delta:+.2f} {t('units_abbr_t')}" if o2_delta != 0 else None)
+            col_m6.metric(t("pm25_removed"), f"{sim_pm25:.2f} kg", f"{pm25_delta:+.2f} kg" if pm25_delta != 0 else None)
 
 
 # ══════════════════════════════════════════════════════════════════════
 # TAB 4: SPECIES BREAKDOWN
 # ══════════════════════════════════════════════════════════════════════
 with tab4:
-    st.markdown("## Species Efficiency & Breakdown")
+    st.markdown(f"## {t('species_efficiency_breakdown')}")
 
     if summary_df.empty:
-        st.info("Species breakdown comparisons will appear here once trees are added to the sandbox or a plan is uploaded.")
+        st.info(t("species_breakdown_info"))
     elif schedule_df is not None:
         # Benefit radar
-        st.markdown("### Multi-Benefit Comparison (Per-Tree Average)")
+        st.markdown(f"### {t('radar_title')}")
         
         sp_totals = (summary_df.groupby("species")
                 .agg(carbon=("carbon_storage_kg", "mean"),
@@ -1459,7 +1448,7 @@ with tab4:
         top5_default = sp_totals.nlargest(5, "carbon").index.tolist()
         
         selected_radar_species = st.multiselect(
-            "Select species to compare (defaults to top 5 by average carbon):",
+            t("radar_select"),
             options=all_species,
             default=top5_default if len(top5_default) > 0 else all_species
         )
@@ -1475,7 +1464,7 @@ with tab4:
                     radar_norm[col] = radar_norm[col] / mx
 
             fig5 = go.Figure()
-            cats = ["Carbon", "Sequestration", "Stormwater", "PM2.5", "NO2"]
+            cats = [t("radar_carbon"), t("radar_seq"), t("radar_storm"), t("radar_pm25"), t("radar_no2")]
             for i, (sp, row) in enumerate(radar_norm.iterrows()):
                 fig5.add_trace(go.Scatterpolar(
                     r=[row["carbon"], row["seq"], row["storm"], row["pm25"], row["no2"]],
@@ -1488,11 +1477,11 @@ with tab4:
                 **PLOT_LAYOUT,
             )
             st.plotly_chart(fig5, use_container_width=True)
-            st.caption("**Efficiency Metrics:** The chart shows the relative efficiency of a single tree of each species. Values are normalized per-tree averages, meaning tree count does not skew the results. Species with high wood density and LAI rank higher on a per-tree basis.")
+            st.caption(t("radar_caption"))
         else:
-            st.warning("Please select at least one species to display the radar chart.")
+            st.warning(t("select_one_species"))
 
-        st.markdown("### Detailed Species Performance & Eco-Efficiency Ranking")
+        st.markdown(f"### {t('species_table_title')}")
         
         # Calculate per-tree metrics for all species
         sp_perf = summary_df.groupby("species").agg(
@@ -1534,51 +1523,51 @@ with tab4:
         ]].reset_index()
 
         sp_agg_display.columns = [
-            "Species",
-            "Rank",
-            "Count",
-            "Eco-Efficiency Score (0-100)",
-            "Avg DBH Growth (cm)",
-            "Avg Height Growth (m)",
-            "Avg Carbon Storage (kg/tree)",
-            "Avg Stormwater Intercept (L/tree)",
-            "Total Carbon Storage (kg)",
-            "Total Stormwater Intercept (L)"
+            t("col_species"),
+            t("col_rank"),
+            t("col_count"),
+            t("col_score"),
+            t("col_avg_dbh_growth"),
+            t("col_avg_height_growth"),
+            t("col_avg_carbon_storage"),
+            t("col_avg_stormwater"),
+            t("col_total_carbon_storage"),
+            t("col_total_stormwater")
         ]
 
         st.dataframe(sp_agg_display.round(1), use_container_width=True, hide_index=True)
     else:
-        st.info("Species breakdown requires schedule data from DXF processing.")
+        st.info(t("species_breakdown_dxf_required"))
 
 
 # ══════════════════════════════════════════════════════════════════════
 # TAB 5: EXPORT
 # ══════════════════════════════════════════════════════════════════════
 with tab5:
-    st.markdown("## Download Reports")
+    st.markdown(f"## {t('download_reports')}")
 
     if summary_df.empty:
-        st.info("Export options will appear here once trees are added to the sandbox or a plan is uploaded.")
+        st.info(t("export_info"))
     else:
         col1, col2, col3 = st.columns(3)
 
         with col1:
             csv_sched = schedule_df.to_csv(index=False)
             st.download_button(
-                "Download Full Schedule CSV",
+                t("dl_full_sched"),
                 csv_sched, "treefolk_atlas_schedule.csv", "text/csv",
                 use_container_width=True,
             )
-            st.caption(f"{len(schedule_df):,} rows")
+            st.caption(t("rows_count", n=len(schedule_df)))
 
         with col2:
             csv_sum = summary_df.to_csv(index=False)
             st.download_button(
-                "Download Summary CSV",
+                t("dl_summary"),
                 csv_sum, "treefolk_atlas_summary.csv", "text/csv",
                 use_container_width=True,
             )
-            st.caption(f"{len(summary_df):,} trees")
+            st.caption(t("trees_count", n=len(summary_df)))
 
         with col3:
             sp_agg = (summary_df.groupby("species").agg(
@@ -1590,16 +1579,48 @@ with tab5:
             ).sort_values("total_carbon_kg", ascending=False).reset_index())
             csv_sp = sp_agg.to_csv(index=False)
             st.download_button(
-                "Download Species Report CSV",
+                t("dl_species"),
                 csv_sp, "treefolk_atlas_species.csv", "text/csv",
                 use_container_width=True,
             )
-            st.caption(f"{len(sp_agg)} species")
+            st.caption(t("species_count_msg", n=len(sp_agg)))
 
         st.markdown("---")
-        st.markdown("### Full Data Table")
+        st.markdown(f"### {t('full_data_table')}")
+        
+        summary_df_display = summary_df.copy()
+        
+        col_mapping = {
+            "tree_id": t("col_tree_id"),
+            "block_name": t("col_block"),
+            "species": t("col_species"),
+            "x": t("col_x"),
+            "y": t("col_y"),
+            "layer": t("layer_filter"),
+            "dbh_cm": t("dbh_label"),
+            "height_m": t("height_label").split("[")[0].strip(),
+            "carbon_storage_kg": t("col_avg_carbon").split("(")[0].strip() + " (kg)",
+            "co2_storage_kg": t("co2_equivalent_stored").split("(")[0].strip() + " (kg)",
+            "cumulative_seq_kg": t("cum_c_seq").split("(")[0].strip() + " (kg)",
+            "cumulative_co2_seq_kg": t("cum_co2_seq").split("(")[0].strip() + " (kg)",
+            "cumulative_o2_production_kg": t("oxygen_production").split("(")[0].strip() + " (kg)",
+            "cumulative_epa_gallons": t("gasoline_saved"),
+            "cumulative_epa_miles": t("miles_avoided"),
+            "stormwater_l": t("stormwater_intercepted").split("(")[0].strip() + " (L)",
+            "pm25_removed_g": "PM2.5 (g)",
+            "no2_removed_g": "NO₂ (g)",
+            "o3_removed_g": "O₃ (g)",
+            "so2_removed_g": "SO₂ (g)",
+            "dbh_growth_cm": t("col_avg_dbh_growth"),
+            "height_growth_m": t("col_avg_height_growth"),
+            "match_level": t("species_match")
+        }
+        
+        rename_dict = {k: v for k, v in col_mapping.items() if k in summary_df_display.columns}
+        summary_df_display = summary_df_display.rename(columns=rename_dict)
+        
         st.dataframe(
-            summary_df.round(2),
+            summary_df_display.round(2),
             use_container_width=True,
             hide_index=True,
             height=500,
@@ -1610,9 +1631,13 @@ with tab5:
 # TAB 6: METHODOLOGY
 # ══════════════════════════════════════════════════════════════════════
 with tab6:
-    st.markdown("## 📚 Full Scientific Methodology")
-    methodology_path = Path(__file__).parent.parent / "docs" / "methodology.md"
+    st.markdown(f"## {t('methodology_title')}")
+    if st.session_state.lang == "Bahasa Indonesia":
+        methodology_path = Path(__file__).parent.parent / "docs" / "methodology_id.md"
+    else:
+        methodology_path = Path(__file__).parent.parent / "docs" / "methodology.md"
+        
     if methodology_path.exists():
         st.markdown(methodology_path.read_text(encoding="utf-8"))
     else:
-        st.info("Methodology document not found.")
+        st.info(t("methodology_not_found"))
