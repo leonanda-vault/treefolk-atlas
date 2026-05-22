@@ -1,0 +1,14 @@
+tree_id,block_name,species,caliper_cm,height_m,x,y,layer
+1,TREE_10m_SPREAD,SAMANEA SAMAN,7,,39.731,3.847,L-PLNT-TREE-PROP
+2,TREE_6m_OVAL,Tabebuia rosea,5,,30,50,L-PLNT-TREE-PROP
+3,TREE_8m_SPREAD,Tectona grandis,7,,15,50,L-PLNT-TREE-PROP
+4,TREE_8m_SPREAD,Cyrtophyllum fragrans,5,,130,20,L-PLNT-TREE-PROP
+5,TREE_4m_COLUMNAR,Cassia fistula,5,,115,20,L-PLNT-TREE-PROP
+6,TREE_10m_SPREAD,Ficus benjamina,5,,100,20,L-PLNT-TREE-PROP
+7,PALM_8m,Cocos nucifera,15,,85,35,L-PLNT-TREE-PROP
+8,PALM_8m,Cocos nucifera,15,,85,15,L-PLNT-TREE-PROP
+9,TREE_6m_OVAL,Syzygium grande,5,,70,25,L-PLNT-TREE-PROP
+10,TREE_6m_OVAL,Terminalia catappa,5,,55,25,L-PLNT-TREE-PROP
+11,TREE_10m_SPREAD,Samanea saman,7,,40,30,L-PLNT-TREE-PROP
+12,TREE_8m_SPREAD,Pterocarpus indicus,5,,25,20,L-PLNT-TREE-PROP
+13,TREE_8m_SPREAD,Pterocarpus indicus,5,,10,20,L-PLNT-TREE-PROP

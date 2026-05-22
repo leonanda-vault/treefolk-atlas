@@ -1,0 +1,45 @@
+# Byte-compiled / optimised
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Distribution / packaging
+dist/
+build/
+*.egg-info/
+*.egg
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Database (regenerated from seed)
+data/itree_sea.db
+
+# Output files
+output/*.geojson
+output/*.csv
+
+# Logs
+*.log
+
+# Large data and references
+data/SAMPLE FOR I TREE SEA DEVELOPMENT/
+references/gwdd_v2.2.csv
+
+# CAD temporary/backup files
+**/*.bak
+**/*.dwl
+**/*.dwl2

@@ -1,0 +1,93 @@
+[i-Tree](https://www.itreetools.org/)
+- 
+
+      [About](https://www.itreetools.org/about)
+
+
+- 
+
+      [All Tools](https://www.itreetools.org/tools)
+
+
+- 
+
+      [Support](https://www.itreetools.org/support)
+
+
+- 
+
+      [Download](https://www.itreetools.org/i-tree-tools-download)
+
+
+- 
+
+      [Shop](https://www.itreetools.org/support-i-tree)
+
+
+- 
+
+      [FAQs](https://www.itreetools.org/faqs_home)
+
+
+- 
+
+      [Connect](https://www.itreetools.org/contact-itree)
+
+
+[About](https://www.itreetools.org/about)
+[All Tools](https://www.itreetools.org/tools)
+[Support](https://www.itreetools.org/support)
+[Download](https://www.itreetools.org/i-tree-tools-download)
+[Shop](https://www.itreetools.org/support-i-tree)
+[FAQs](https://www.itreetools.org/faqs_home)
+[Connect](https://www.itreetools.org/contact-itree)
+1. 
+                            https://www.itreetools.org/
+
+2. 
+                                    [Support](https://www.itreetools.org/support)
+
+3. 
+                                    [Resources Overview](https://www.itreetools.org/support/resources-overview)
+
+4. 
+                                    [i-Tree Methods Documentation, Model Notes, & Technical Papers](https://www.itreetools.org/support/resources-overview/i-tree-methods-and-files)
+
+5. 
+                                    i-Tree Eco Tropical Carbon Equations
+
+[Support](https://www.itreetools.org/support)
+[Resources Overview](https://www.itreetools.org/support/resources-overview)
+[i-Tree Methods Documentation, Model Notes, & Technical Papers](https://www.itreetools.org/support/resources-overview/i-tree-methods-and-files)
+
+#### A change in USDA Forest Service policy has indefinitely halted traditional funding for i-Tree.
+
+#### For updates on impacts to the tools and support click [here](https://www.itreetools.org/usda-fs-funding-lapse).
+[here](https://www.itreetools.org/usda-fs-funding-lapse)
+
+#### Office hours are back! Join us Thursday, June 11 at 2pm ET via [Teams](http://bit.ly/i-Tree_Office_Hours_Teams) or [add to calendar](https://www.itreetools.org/documents/1101/i-Tree_OfficeHours_2026.ics).
+[Teams](http://bit.ly/i-Tree_Office_Hours_Teams)
+[add to calendar](https://www.itreetools.org/documents/1101/i-Tree_OfficeHours_2026.ics)
+
+# i-Tree Eco Tropical Carbon Equations
+
+i-Tree Eco users conducting projects in tropical areas using Eco version 6.0.22 and newer will receive carbon sequestration and carbon storage estimates based on equations derived specifically for tropical dry, moist, or wet areas. The new tropical equations will only be available for designated tropical areas as shown in the map below and used as the default unless tropical location users elect to use non-tropical i-Tree equations during Eco project configuration. Additional details and common question are below.
+How will the tropical equations option work in Eco project steps? There will be a checkbox option available – only for locations that are designated tropical – on the Eco Project Configuration > Data Collection Options page labeled tropical carbon equations/non-tropical carbon equations. The Eco project Metadata and Carbon reports will note which carbon equations are being used. The Forecast model, which is optional inside Eco, will use the carbon equations users designate in project configuration.
+How are equations designated and applied for tropical locations? There are three climate specific tropical carbon equations, one each for dry, moist, and wet tropical climates. The tropical equation applied will default to either wet, dry or moist based upon annual precipitation, users will not be able to change the designation. Koppen-Geiger climate classifications were used to determine the overall tropical areas and world climate data to determine average annual precipitation: wet (>3500 mm prec/yr), moist (1500-3500 mm/yr) and dry (<1500 mm year).
+How do the new tropical equations compare to non-tropical i-Tree equations? The new tropical carbon equations are climate specific compared to non-tropical i-Tree carbon equations which are species specific. In comparing tropical and non-tropical i-Tree carbon equations, results derived from tropical equations (Red: Solid, Short Dash, and Long dash in graph below) fall within results derived from non-tropical i-Tree equations for hardwood species (i-Tree Hrdwd in graph below), but above non-tropical i-Tree equations for conifer species (i-Tree Con in graph below). The Chonacky results are displayed on the graph to demonstrate that the non-tropical i-Tree Eco and tropical carbon equations are in line with other commonly used equations.
+Where do the tropical equations come from?
+Tropical carbon equations come from: Chave, J., C. Andalo, S. Brown, M.A. Cairns, J.Q. Chambers, D. Eamus, H. Fölster, F. Fromard, N. Higuchi, T. Kira, J.P. Lescure, B. W. Nelson, H. Ogawa, H. Puig, B. Riéra, and T. Yamakura. 2005. Tree allometry and improved estimation of carbon stocks and balance in tropical forests. Oecologia 145: 87-99.
+How can I request a change for my city’s tropical or climate designation?
+To see the list of tropical climate designations, [go here](https://www.itreetools.org/documents/648/TropicalClimateList.xlsx). If you see a designation that needs to be changed and/or you think a location needs to be added or deleted to this list, please contact us at [info@itreetools.org](http://www.info@itreetools.org) and provide any supporting information related to your request.
+Additional i-Tree 2021 Science Change Resources
+- [New Carbon Equations](https://www.itreetools.org/support/resources-overview/i-tree-methods-and-files/new-carbon-equations-and-methods-2020) - webpage describing the new carbon equations and methods integrated in i-Tree Eco v6.0.22 release
+- [i-Tree 2021 Science Changes Outline - Feb2021](https://www.itreetools.org/documents/660/i-Tree2021_Science_Updates_Outline_Feb2021.pdf) - A (pdf) outline with brief descriptions and reasons for sciences changes integrated in the i-Tree 2021 suite.
+- [i-Tree Roundtable YouTube link](https://youtu.be/8WPM04e6JVA?t=1478) - i-Tree Roundtable Jan2021 discussion with Dr. Dave Nowak and the i-Tree Team describing i-Tree2021 model updates.(set to start at updates discussion point 24:38)
+[New Carbon Equations](https://www.itreetools.org/support/resources-overview/i-tree-methods-and-files/new-carbon-equations-and-methods-2020)
+[i-Tree 2021 Science Changes Outline - Feb2021](https://www.itreetools.org/documents/660/i-Tree2021_Science_Updates_Outline_Feb2021.pdf)
+[i-Tree Roundtable YouTube link](https://youtu.be/8WPM04e6JVA?t=1478)
+Since 2006, i-Tree® has been a cooperative initiative between:
+
+# i-Tree Eco Tropical Carbon Equations
+
+the [Davey Tree Expert Company](http://www.davey.com), the [USDA Forest Service](https://www.fs.usda.gov/),[Arbor Day Foundation](http://www.arborday.org/), [Urban and Community Forestry Society](https://www.urban-forestry.com/), [International Society of Arboriculture](http://www.isa-arbor.com/), [Casey Trees](http://www.caseytrees.org/), [SUNY College of Environmental Science and Forestry](http://www.esf.edu/), [National Association of Foresters](https://www.stateforesters.org/), and [American Forests](https://www.americanforests.org/).i-Tree is a registered trademark - please credit it in your work.

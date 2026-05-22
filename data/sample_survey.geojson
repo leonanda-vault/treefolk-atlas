@@ -1,0 +1,80 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [106.8456, -6.2088] },
+      "properties": {
+        "tree_id": "JKT-2024-0001",
+        "species": "Pterocarpus indicus",
+        "dbh_cm": 45.2,
+        "height_m": 15.0,
+        "condition": "good",
+        "common_name": "Angsana",
+        "crown_w_m": 12.0,
+        "land_use": "street",
+        "survey_date": "2024-11-15"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [106.8461, -6.2091] },
+      "properties": {
+        "tree_id": "JKT-2024-0002",
+        "species": "Samanea saman",
+        "dbh_cm": 78.5,
+        "height_m": 22.0,
+        "condition": "excellent",
+        "common_name": "Rain Tree",
+        "crown_w_m": 25.0,
+        "land_use": "park",
+        "survey_date": "2024-11-15"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [106.8470, -6.2085] },
+      "properties": {
+        "tree_id": "JKT-2024-0003",
+        "species": "Cocos nucifera",
+        "dbh_cm": 25.0,
+        "height_m": 18.0,
+        "condition": "fair",
+        "common_name": "Coconut Palm",
+        "crown_w_m": 6.0,
+        "land_use": "median",
+        "survey_date": "2024-11-15"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [106.8480, -6.2090] },
+      "properties": {
+        "tree_id": "JKT-2024-0004",
+        "species": "Terminalia catappa",
+        "dbh_cm": 35.0,
+        "height_m": 12.0,
+        "condition": "good",
+        "common_name": "Ketapang",
+        "crown_w_m": 10.0,
+        "land_use": "street",
+        "survey_date": "2024-11-15"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [106.8490, -6.2082] },
+      "properties": {
+        "tree_id": "JKT-2024-0005",
+        "species": "Ficus benjamina",
+        "dbh_cm": 60.0,
+        "height_m": 20.0,
+        "condition": "good",
+        "common_name": "Beringin",
+        "crown_w_m": 18.0,
+        "land_use": "park",
+        "survey_date": "2024-11-15"
+      }
+    }
+  ]
+}

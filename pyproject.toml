@@ -1,0 +1,66 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "itree-sea"
+version = "0.1.0"
+description = "Southeast Asian Urban Forest Carbon Calculator — an open-source i-Tree Eco bridge for tropical species"
+readme = "README.md"
+license = {text = "MIT"}
+requires-python = ">=3.10"
+authors = [
+    {name = "Leonanda"},
+]
+keywords = ["urban-forestry", "carbon", "i-tree", "gis", "cad", "tropical", "biomass", "allometry"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: GIS",
+    "Topic :: Scientific/Engineering :: Bio-Informatics",
+]
+
+dependencies = [
+    "pandas>=2.0",
+]
+
+[project.optional-dependencies]
+gis = [
+    "geopandas>=0.14",
+    "fiona>=1.9",
+]
+cad = [
+    "ezdxf>=1.1",
+]
+dashboard = [
+    "streamlit>=1.30",
+    "plotly>=5.18",
+    "pydeck>=0.8",
+]
+all = [
+    "geopandas>=0.14",
+    "fiona>=1.9",
+    "ezdxf>=1.1",
+    "streamlit>=1.30",
+    "plotly>=5.18",
+    "pydeck>=0.8",
+]
+dev = [
+    "pytest>=7.0",
+    "pytest-cov>=4.0",
+]
+
+[project.scripts]
+itree-sea = "itree_sea.main:main"
+
+[tool.setuptools.packages.find]
+include = ["itree_sea*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-v --tb=short"

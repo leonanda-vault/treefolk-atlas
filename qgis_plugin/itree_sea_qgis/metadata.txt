@@ -1,0 +1,17 @@
+[general]
+name=i-Tree SEA
+qgisMinimumVersion=3.28
+description=Southeast Asian Urban Forest Carbon Calculator — calculates biomass, carbon storage, sequestration, stormwater interception, and air pollution removal for tropical trees.
+version=0.1.0
+author=Leonanda
+email=your.email@example.com
+about=An open-source bridge replicating core i-Tree Eco carbon calculations using Chave et al. (2014) pantropical allometric models, tailored for Singapore and Indonesian tropical species. Provides Processing algorithms that enrich tree inventory vector layers with ecosystem benefit columns.
+tracker=https://github.com/your-username/itree-sea/issues
+repository=https://github.com/your-username/itree-sea
+tags=carbon,biomass,urban forestry,trees,i-tree,ecology,landscape,tropical,singapore,indonesia
+homepage=https://github.com/your-username/itree-sea
+category=Analysis
+icon=icon.png
+experimental=True
+deprecated=False
+hasProcessingProvider=yes
