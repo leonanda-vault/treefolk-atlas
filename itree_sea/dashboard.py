@@ -29,8 +29,36 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# ── Auto-initialize and seed SQLite database if missing ──
+# ── Auto-initialize and seed SQLite database if missing or empty ──
+import sqlite3
 from itree_sea.config import DATABASE_PATH
+
+def ensure_database_is_ready():
+    from itree_sea.database import init_db, seed_from_csv
+    
+    # Condition 1: Database file doesn't exist at all
+    if not DATABASE_PATH.exists():
+        init_db()
+        seed_from_csv()
+        return
+
+    # Condition 2: File exists, but check if the species_lookup table is missing
+    try:
+        with sqlite3.connect(DATABASE_PATH) as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='species_lookup';")
+            if not cursor.fetchone():
+                st.warning("Database tables missing. Re-initializing...")
+                init_db()
+                seed_from_csv()
+    except Exception as e:
+        st.error(f"Database integrity check failed: {e}")
+
+try:
+    ensure_database_is_ready()
+except Exception as e:
+    st.error(f"Failed to auto-initialize species database: {e}")
+    
 # ── Custom CSS ──
 st.markdown("""
 <style>
