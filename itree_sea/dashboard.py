@@ -4,9 +4,17 @@ i-Tree SEA Dashboard — Streamlit Frontend
 Run with:  streamlit run itree_sea/dashboard.py
 """
 
+# ── FIX: Inject project root into Python path before any package imports ──
+import sys
+from pathlib import Path
+
+repo_root = str(Path(__file__).resolve().parent.parent)
+if repo_root not in sys.path:
+    sys.path.insert(0, repo_root)
+# ─────────────────────────────────────────────────────────────────────────
+
 import io
 import tempfile
-from pathlib import Path
 
 import streamlit as st
 import pandas as pd
@@ -23,14 +31,6 @@ st.set_page_config(
 
 # ── Auto-initialize and seed SQLite database if missing ──
 from itree_sea.config import DATABASE_PATH
-if not DATABASE_PATH.exists():
-    try:
-        from itree_sea.database import init_db, seed_from_csv
-        init_db()
-        seed_from_csv()
-    except Exception as e:
-        st.error(f"Failed to auto-initialize species database: {e}")
-
 # ── Custom CSS ──
 st.markdown("""
 <style>
