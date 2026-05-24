@@ -134,6 +134,15 @@ st.markdown("""
         line-height: 1.2;
         word-break: break-word;
     }
+    @media (max-width: 992px) {
+        [data-testid="stHorizontalBlock"] {
+            flex-direction: column !important;
+        }
+        [data-testid="stHorizontalBlock"] > [data-testid="column"] {
+            width: 100% !important;
+            max-width: 100% !important;
+        }
+    }
 </style>
 """, unsafe_allow_html=True)
 
