@@ -141,17 +141,9 @@ def render_custom_metrics(metrics):
     """Renders custom responsive metric cards."""
     cards_html = []
     for m in metrics:
-        cards_html.append(f'''
-        <div class="custom-metric-card">
-            <div class="custom-metric-label">{m["label"]}</div>
-            <div class="custom-metric-value">{m["value"]}</div>
-        </div>
-        ''')
-    st.markdown(f'''
-    <div class="custom-metric-container">
-        {"".join(cards_html)}
-    </div>
-    ''', unsafe_allow_html=True)
+        cards_html.append(f'<div class="custom-metric-card"><div class="custom-metric-label">{m["label"]}</div><div class="custom-metric-value">{m["value"]}</div></div>')
+    html_str = f'<div class="custom-metric-container">{"".join(cards_html)}</div>'
+    st.markdown(html_str, unsafe_allow_html=True)
 
 # ── Color palette ──
 COLORS = [
