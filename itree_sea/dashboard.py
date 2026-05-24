@@ -685,6 +685,12 @@ else:
     schedule_df = st.session_state.schedule
     summary_df = st.session_state.summary
 
+# Filter out removed trees from display dataframes
+if schedule_df is not None and not schedule_df.empty and "layer" in schedule_df.columns:
+    schedule_df = schedule_df[schedule_df["layer"] != "L-PLNT-TREE-RMVL"]
+if summary_df is not None and not summary_df.empty and "layer" in summary_df.columns:
+    summary_df = summary_df[summary_df["layer"] != "L-PLNT-TREE-RMVL"]
+
 tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
     t("tab_overview"),
     t("tab_analysis"),
