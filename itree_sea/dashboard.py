@@ -84,8 +84,74 @@ st.markdown("""
     }
     div[data-testid="stMetric"] label { color: #a0c4aa !important; }
     div[data-testid="stMetric"] div[data-testid="stMetricValue"] { color: #7fdb98 !important; }
+
+    /* Responsive Custom Metric Cards */
+    .custom-metric-container {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 16px;
+        margin-bottom: 24px;
+    }
+    .custom-metric-card {
+        flex: 1 1 180px;
+        background: linear-gradient(135deg, #1a3a2a 0%, #0d1f17 100%);
+        border: 1px solid #2d5a3d;
+        border-radius: 12px;
+        padding: 1.2rem;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+        transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        position: relative;
+        overflow: hidden;
+    }
+    .custom-metric-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: radial-gradient(circle at top right, rgba(127, 219, 152, 0.08) 0%, transparent 70%);
+        pointer-events: none;
+    }
+    .custom-metric-card:hover {
+        transform: translateY(-3px);
+        border-color: #7fdb98;
+        box-shadow: 0 8px 25px rgba(127, 219, 152, 0.15);
+    }
+    .custom-metric-label {
+        color: #a0c4aa;
+        font-size: 0.85rem;
+        font-weight: 500;
+        margin-bottom: 8px;
+    }
+    .custom-metric-value {
+        color: #7fdb98;
+        font-size: 1.8rem;
+        font-weight: 700;
+        line-height: 1.2;
+        word-break: break-word;
+    }
 </style>
 """, unsafe_allow_html=True)
+
+def render_custom_metrics(metrics):
+    """Renders custom responsive metric cards."""
+    cards_html = []
+    for m in metrics:
+        cards_html.append(f'''
+        <div class="custom-metric-card">
+            <div class="custom-metric-label">{m["label"]}</div>
+            <div class="custom-metric-value">{m["value"]}</div>
+        </div>
+        ''')
+    st.markdown(f'''
+    <div class="custom-metric-container">
+        {"".join(cards_html)}
+    </div>
+    ''', unsafe_allow_html=True)
 
 # ── Color palette ──
 COLORS = [
@@ -630,30 +696,36 @@ with tab1:
         st.info(t("overview_no_data_info"))
     else:
         # Metric cards
-        c1, c2, c3, c4 = st.columns(4)
         n_trees = len(summary_df)
+        match_pct = (summary_df["match_level"] == "species").mean() * 100
         
         # Use CO2 if available, otherwise fallback to Carbon
         if "co2_storage_kg" in summary_df.columns:
             total_co2 = summary_df["co2_storage_kg"].sum()
             total_co2_seq = summary_df.get("cumulative_co2_seq_kg", pd.Series([0])).sum()
-            c2.metric(t("co2_stored"), f"{total_co2/1000:,.1f} {t('units_abbr_t')}")
-            c3.metric(t("cum_co2_seq"), f"{total_co2_seq/1000:,.1f} {t('units_abbr_t')}")
+            val_co2 = f"{total_co2/1000:,.1f} {t('units_abbr_t')}"
+            val_seq = f"{total_co2_seq/1000:,.1f} {t('units_abbr_t')}"
+            lbl_co2 = t("co2_stored")
+            lbl_seq = t("cum_co2_seq")
         else:
             total_carbon = summary_df.get("carbon_storage_kg", pd.Series([0])).sum()
             total_seq = summary_df.get("cumulative_seq_kg", pd.Series([0])).sum()
-            c2.metric(t("carbon_stored"), f"{total_carbon/1000:,.1f} {t('units_abbr_t')}")
-            c3.metric(t("cum_c_seq"), f"{total_seq/1000:,.1f} {t('units_abbr_t')}")
+            val_co2 = f"{total_carbon/1000:,.1f} {t('units_abbr_t')}"
+            val_seq = f"{total_seq/1000:,.1f} {t('units_abbr_t')}"
+            lbl_co2 = t("carbon_stored")
+            lbl_seq = t("cum_c_seq")
 
-        match_pct = (summary_df["match_level"] == "species").mean() * 100
-
-        c1.metric(t("trees"), f"{n_trees:,}")
-        c4.metric(t("species_match"), f"{match_pct:.0f}%")
+        overview_metrics = [
+            {"label": t("trees"), "value": f"{n_trees:,}"},
+            {"label": lbl_co2, "value": val_co2},
+            {"label": lbl_seq, "value": val_seq},
+            {"label": t("species_match"), "value": f"{match_pct:.0f}%"}
+        ]
+        render_custom_metrics(overview_metrics)
 
         # EPA Equivalencies
         if "cumulative_epa_liters" in summary_df.columns:
             st.markdown(f"### {t('env_equiv')}")
-            e1, e2, e3, e4, e5 = st.columns(5)
             total_epa_liters = summary_df.get("cumulative_epa_liters", pd.Series([0])).sum()
             total_epa_km = summary_df.get("cumulative_epa_km", pd.Series([0])).sum()
             total_o2 = summary_df.get("cumulative_o2_production_kg", pd.Series([0])).sum()
@@ -662,11 +734,14 @@ with tab1:
             total_motorcycle_km = total_co2_seq * 20.0
             total_smartphones = total_co2_seq * 80.645
             
-            e1.metric(t("o2_produced"), f"{total_o2/1000:,.1f} {t('units_abbr_t')}")
-            e2.metric(t("gasoline_saved"), f"{total_epa_liters:,.0f} {t('units_abbr_liters')}")
-            e3.metric(t("car_avoided"), f"{total_epa_km:,.0f} {t('units_abbr_km')}")
-            e4.metric(t("motorcycle_avoided"), f"{total_motorcycle_km:,.0f} {t('units_abbr_km')}")
-            e5.metric(t("smartphones_charged"), f"{total_smartphones:,.0f} {t('units_abbr_charges')}")
+            equiv_metrics = [
+                {"label": t("o2_produced"), "value": f"{total_o2/1000:,.1f} {t('units_abbr_t')}"},
+                {"label": t("gasoline_saved"), "value": f"{total_epa_liters:,.0f} {t('units_abbr_liters')}"},
+                {"label": t("car_avoided"), "value": f"{total_epa_km:,.0f} {t('units_abbr_km')}"},
+                {"label": t("motorcycle_avoided"), "value": f"{total_motorcycle_km:,.0f} {t('units_abbr_km')}"},
+                {"label": t("smartphones_charged"), "value": f"{total_smartphones:,.0f} {t('units_abbr_charges')}"}
+            ]
+            render_custom_metrics(equiv_metrics)
 
         st.markdown("---")
 
