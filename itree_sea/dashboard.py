@@ -127,6 +127,18 @@ def process_file(uploaded_file, forecast_years, selected_layers, site_profile_ke
 
     elif suffix == ".csv":
         df = pd.read_csv(tmp_path)
+        # Convert legacy columns for backward compatibility
+        legacy_mappings = {
+            "epa_gasoline_gallons_yr": ("epa_gasoline_liters_yr", 3.78541),
+            "epa_miles_driven_yr": ("epa_km_driven_yr", 1.60934),
+            "cumulative_epa_gallons": ("cumulative_epa_liters", 3.78541),
+            "cumulative_epa_miles": ("cumulative_epa_km", 1.60934),
+        }
+        for old_col, (new_col, multiplier) in legacy_mappings.items():
+            if old_col in df.columns:
+                df[new_col] = df[old_col] * multiplier
+                if old_col != new_col:
+                    df = df.drop(columns=[old_col])
         return df, "csv"
 
     return None, None
@@ -164,7 +176,7 @@ def build_summary(schedule_df):
     final["dbh_growth_cm"] = final["dbh_cm"] - final["dbh_cm_initial"]
     final["height_growth_m"] = final["height_m"] - final["height_m_initial"]
 
-    cumul_cols = ["carbon_seq_kg", "co2_seq_kg", "o2_production_kg_yr", "epa_gasoline_gallons_yr", "epa_miles_driven_yr"]
+    cumul_cols = ["carbon_seq_kg", "co2_seq_kg", "o2_production_kg_yr", "epa_gasoline_liters_yr", "epa_km_driven_yr"]
     
     # Handle cases where new columns might not exist (e.g. old CSV upload)
     existing_cumul_cols = [c for c in cumul_cols if c in schedule_df.columns]
@@ -175,8 +187,8 @@ def build_summary(schedule_df):
                  "carbon_seq_kg": "cumulative_seq_kg",
                  "co2_seq_kg": "cumulative_co2_seq_kg",
                  "o2_production_kg_yr": "cumulative_o2_production_kg",
-                 "epa_gasoline_gallons_yr": "cumulative_epa_gallons",
-                 "epa_miles_driven_yr": "cumulative_epa_miles"
+                 "epa_gasoline_liters_yr": "cumulative_epa_liters",
+                 "epa_km_driven_yr": "cumulative_epa_km"
              }))
     
     summary = final.merge(cumul, on="tree_id", how="left")
@@ -352,15 +364,15 @@ elif sandbox_btn:
     st.session_state.schedule = pd.DataFrame(columns=[
         "tree_id", "block_name", "species", "x", "y", "layer",
         "year", "dbh_cm", "height_m", "carbon_storage_kg", "carbon_seq_kg",
-        "co2_storage_kg", "co2_seq_kg", "o2_production_kg_yr", "epa_gasoline_gallons_yr",
-        "epa_miles_driven_yr", "stormwater_l", "pm25_removed_g",
+        "co2_storage_kg", "co2_seq_kg", "o2_production_kg_yr", "epa_gasoline_liters_yr",
+        "epa_km_driven_yr", "stormwater_l", "pm25_removed_g",
         "no2_removed_g", "o3_removed_g", "so2_removed_g", "match_level"
     ])
     st.session_state.summary = pd.DataFrame(columns=[
         "tree_id", "block_name", "species", "x", "y", "layer",
         "dbh_cm", "height_m", "carbon_storage_kg",
         "co2_storage_kg", "cumulative_seq_kg", "cumulative_co2_seq_kg",
-        "cumulative_o2_production_kg", "cumulative_epa_gallons", "cumulative_epa_miles",
+        "cumulative_o2_production_kg", "cumulative_epa_liters", "cumulative_epa_km",
         "stormwater_l", "pm25_removed_g", "no2_removed_g", "o3_removed_g", "so2_removed_g",
         "dbh_growth_cm", "height_growth_m", "match_level"
     ])
@@ -611,16 +623,22 @@ with tab1:
         c4.metric(t("species_match"), f"{match_pct:.0f}%")
 
         # EPA Equivalencies
-        if "cumulative_epa_gallons" in summary_df.columns:
+        if "cumulative_epa_liters" in summary_df.columns:
             st.markdown(f"### {t('env_equiv')}")
-            e1, e2, e3 = st.columns(3)
-            total_epa_gal = summary_df.get("cumulative_epa_gallons", pd.Series([0])).sum()
-            total_epa_miles = summary_df.get("cumulative_epa_miles", pd.Series([0])).sum()
+            e1, e2, e3, e4, e5 = st.columns(5)
+            total_epa_liters = summary_df.get("cumulative_epa_liters", pd.Series([0])).sum()
+            total_epa_km = summary_df.get("cumulative_epa_km", pd.Series([0])).sum()
             total_o2 = summary_df.get("cumulative_o2_production_kg", pd.Series([0])).sum()
+            total_co2_seq = summary_df.get("cumulative_co2_seq_kg", pd.Series([0])).sum()
+            
+            total_motorcycle_km = total_co2_seq * 20.0
+            total_smartphones = total_co2_seq * 80.645
             
             e1.metric(t("o2_produced"), f"{total_o2/1000:,.1f} {t('units_abbr_t')}")
-            e2.metric(t("gasoline_saved"), f"{total_epa_gal:,.0f} {t('units_abbr_gallons')}")
-            e3.metric(t("miles_avoided"), f"{total_epa_miles:,.0f} {t('units_abbr_miles')}")
+            e2.metric(t("gasoline_saved"), f"{total_epa_liters:,.0f} {t('units_abbr_liters')}")
+            e3.metric(t("car_avoided"), f"{total_epa_km:,.0f} {t('units_abbr_km')}")
+            e4.metric(t("motorcycle_avoided"), f"{total_motorcycle_km:,.0f} {t('units_abbr_km')}")
+            e5.metric(t("smartphones_charged"), f"{total_smartphones:,.0f} {t('units_abbr_charges')}")
 
         st.markdown("---")
 
@@ -1589,6 +1607,9 @@ with tab5:
         st.markdown(f"### {t('full_data_table')}")
         
         summary_df_display = summary_df.copy()
+        if "cumulative_co2_seq_kg" in summary_df_display.columns:
+            summary_df_display["cumulative_motorcycle_km"] = summary_df_display["cumulative_co2_seq_kg"] * 20.0
+            summary_df_display["cumulative_smartphones"] = summary_df_display["cumulative_co2_seq_kg"] * 80.645
         
         col_mapping = {
             "tree_id": t("col_tree_id"),
@@ -1604,8 +1625,10 @@ with tab5:
             "cumulative_seq_kg": t("cum_c_seq").split("(")[0].strip() + " (kg)",
             "cumulative_co2_seq_kg": t("cum_co2_seq").split("(")[0].strip() + " (kg)",
             "cumulative_o2_production_kg": t("oxygen_production").split("(")[0].strip() + " (kg)",
-            "cumulative_epa_gallons": t("gasoline_saved"),
-            "cumulative_epa_miles": t("miles_avoided"),
+            "cumulative_epa_liters": f"{t('gasoline_saved')} ({t('units_abbr_liters')})",
+            "cumulative_epa_km": f"{t('car_avoided')} ({t('units_abbr_km')})",
+            "cumulative_motorcycle_km": f"{t('motorcycle_avoided')} ({t('units_abbr_km')})",
+            "cumulative_smartphones": f"{t('smartphones_charged')} ({t('units_abbr_charges')})",
             "stormwater_l": t("stormwater_intercepted").split("(")[0].strip() + " (L)",
             "pm25_removed_g": "PM2.5 (g)",
             "no2_removed_g": "NO₂ (g)",

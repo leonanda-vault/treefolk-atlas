@@ -153,8 +153,8 @@ def calculate_single_tree_schedule(
             "co2_storage_kg": f.co2_storage_kg * cond_mult,
             "co2_seq_kg": f.co2_sequestration_kg * cond_mult,
             "o2_production_kg_yr": f.o2_production_kg_yr * cond_mult,
-            "epa_gasoline_gallons_yr": f.epa_gasoline_gallons_yr * cond_mult,
-            "epa_miles_driven_yr": f.epa_miles_driven_yr * cond_mult,
+            "epa_gasoline_liters_yr": f.epa_gasoline_liters_yr * cond_mult,
+            "epa_km_driven_yr": f.epa_km_driven_yr * cond_mult,
             "stormwater_l": f.stormwater_litres * cond_mult,
             "pm25_removed_g": f.pm25_removed_g * cond_mult,
             "no2_removed_g": f.no2_removed_g * cond_mult,
@@ -187,8 +187,8 @@ def compute_simulation(
         sim_schedule = pd.DataFrame(columns=[
             "tree_id", "block_name", "species", "x", "y", "layer",
             "year", "dbh_cm", "height_m", "carbon_storage_kg", "carbon_seq_kg",
-            "co2_storage_kg", "co2_seq_kg", "o2_production_kg_yr", "epa_gasoline_gallons_yr",
-            "epa_miles_driven_yr", "stormwater_l", "pm25_removed_g",
+            "co2_storage_kg", "co2_seq_kg", "o2_production_kg_yr", "epa_gasoline_liters_yr",
+            "epa_km_driven_yr", "stormwater_l", "pm25_removed_g",
             "no2_removed_g", "o3_removed_g", "so2_removed_g", "match_level"
         ])
 
@@ -197,8 +197,8 @@ def compute_simulation(
         sched_removed_mask = sim_schedule["tree_id"].isin(removed_tree_ids)
         sched_metric_cols = [
             "carbon_storage_kg", "carbon_seq_kg", "co2_storage_kg",
-            "co2_seq_kg", "o2_production_kg_yr", "epa_gasoline_gallons_yr",
-            "epa_miles_driven_yr", "stormwater_l", "pm25_removed_g",
+            "co2_seq_kg", "o2_production_kg_yr", "epa_gasoline_liters_yr",
+            "epa_km_driven_yr", "stormwater_l", "pm25_removed_g",
             "no2_removed_g", "o3_removed_g", "so2_removed_g"
         ]
         for col in sched_metric_cols:
@@ -251,7 +251,7 @@ def compute_simulation(
     numeric_cols = [
         "tree_id", "year", "dbh_cm", "height_m", "x", "y",
         "carbon_storage_kg", "carbon_seq_kg", "co2_storage_kg", "co2_seq_kg",
-        "o2_production_kg_yr", "epa_gasoline_gallons_yr", "epa_miles_driven_yr",
+        "o2_production_kg_yr", "epa_gasoline_liters_yr", "epa_km_driven_yr",
         "stormwater_l", "pm25_removed_g", "no2_removed_g", "o3_removed_g", "so2_removed_g"
     ]
     for col in numeric_cols:

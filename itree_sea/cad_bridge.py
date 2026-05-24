@@ -180,8 +180,8 @@ class ScheduleRow:
     co2_storage_kg: float
     co2_sequestration_kg: float
     o2_production_kg_yr: float
-    epa_gasoline_gallons_yr: float
-    epa_miles_driven_yr: float
+    epa_gasoline_liters_yr: float
+    epa_km_driven_yr: float
     stormwater_litres: float
     pm25_removed_g: float
     no2_removed_g: float
@@ -647,8 +647,8 @@ def generate_schedule(
                 "co2_storage_kg": frow.co2_storage_kg,
                 "co2_seq_kg": frow.co2_sequestration_kg,
                 "o2_production_kg_yr": frow.o2_production_kg_yr,
-                "epa_gasoline_gallons_yr": frow.epa_gasoline_gallons_yr,
-                "epa_miles_driven_yr": frow.epa_miles_driven_yr,
+                "epa_gasoline_liters_yr": frow.epa_gasoline_liters_yr,
+                "epa_km_driven_yr": frow.epa_km_driven_yr,
                 "stormwater_l": frow.stormwater_litres,
                 "pm25_removed_g": frow.pm25_removed_g,
                 "no2_removed_g": frow.no2_removed_g,

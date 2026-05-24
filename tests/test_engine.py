@@ -136,6 +136,14 @@ class TestCalculateBiomass:
         result = calculate_biomass(30.0, 12.0, angsana_coefficients, condition="dead")
         assert result.carbon_storage_kg == 0.0
 
+    def test_epa_equivalencies_metric(self, angsana_coefficients):
+        result = calculate_biomass(30.0, 12.0, angsana_coefficients, is_palm=False)
+        co2_seq = result.co2_sequestration_kg
+        expected_liters = (co2_seq / 1000.0) * 112.18 * 3.78541
+        expected_km = (co2_seq / 1000.0) * 2564.0 * 1.60934
+        assert result.epa_gasoline_liters_yr == pytest.approx(expected_liters, abs=1e-1)
+        assert result.epa_km_driven_yr == pytest.approx(expected_km, abs=1e-1)
+
 
 # ── Sequestration ──
 

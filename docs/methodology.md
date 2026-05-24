@@ -16,7 +16,7 @@ i-Tree SEA is an open-source adaptation of the [USDA Forest Service i-Tree](http
 | Carbon sequestration | kg C/yr | Annual delta-storage |
 | CO₂ Equivalent | kg CO₂ | IPCC stoichiometric ratio (3.6663) |
 | Oxygen production | kg O₂/yr | Photosynthetic stoichiometry (2.6667) |
-| EPA Equivalencies | gallons/miles | US EPA GHG Equivalencies Calculator |
+| EPA Equivalencies | liters/km | US EPA GHG Equivalencies Calculator |
 | Stormwater interception | L/yr | Canopy storage proxy |
 | Air pollution removal (PM2.5, NO₂, O₃, SO₂) | g/yr | Leaf-area deposition proxy |
 
@@ -226,17 +226,22 @@ Annual Oxygen Production (kg/yr) = Net Carbon Sequestration (kg/yr) × 2.6667
 
 ---
 
-## 5. EPA Greenhouse Gas Equivalencies
+## 5. Environmental Equivalencies (Metric Conversions)
 
-To make carbon sequestration metrics more understandable to non-technical stakeholders, the tool converts annual CO₂ sequestration into tangible equivalencies using the US EPA Greenhouse Gas Equivalencies Calculator.
+To make carbon sequestration metrics more understandable to non-technical stakeholders, the tool converts annual CO₂ sequestration into tangible equivalencies using the US EPA Greenhouse Gas Equivalencies Calculator, converted to metric units, and supplementary local factors.
 
 ```
-Gallons of Gasoline Avoided = (Annual CO₂ Sequestration in Metric Tons) × 112.18
-Miles Driven Avoided = (Annual CO₂ Sequestration in Metric Tons) × 2564.0
+Liters of Gasoline Saved = (Annual CO₂ Sequestration in Metric Tons) × 112.18 × 3.78541 ≈ (Annual CO₂ Sequestration in Metric Tons) × 424.65
+Kilometers Driven Avoided = (Annual CO₂ Sequestration in Metric Tons) × 2564.0 × 1.60934 ≈ (Annual CO₂ Sequestration in Metric Tons) × 4126.36
+Kilometers of Motorcycle Travel Avoided = (Annual CO₂ Sequestration in kg) × 20.0
+Smartphones Charged = (Annual CO₂ Sequestration in kg) × 80.645
 ```
 
-> **Source:** US Environmental Protection Agency (EPA) GHG Equivalencies Calculator.
-> **Status:** ✅ Implemented.
+- **Motorcycle factor (20.0 km/kg CO₂)** is based on average emissions of 0.05 kg CO₂/km for small-displacement motorcycles common in Southeast Asia.
+- **Smartphones Charged factor (80.645 charges/kg CO₂)** matches the US EPA factor of 80,645 charges per metric ton of CO₂ (approx. 0.0124 kg CO₂ per charge).
+
+> **Source:** US Environmental Protection Agency (EPA) GHG Equivalencies Calculator and regional transport emission databases.
+> **Status:** ✅ Implemented (converted to metric: 1 gallon ≈ 3.78541 L; 1 mile ≈ 1.60934 km; added regional specific proxies).
 
 ---
 
@@ -259,7 +264,7 @@ Species-specific height parameters are stored in the database and override these
 
 ---
 
-## 5. Stormwater Interception
+## 7. Stormwater Interception
 
 ### 5.1 Model approach
 
@@ -343,7 +348,7 @@ Users can adjust the Leaf Area Index to match site-specific canopy conditions (e
 
 ---
 
-## 6. Air Pollution Removal
+## 8. Air Pollution Removal
 
 ### 6.1 Model approach
 
@@ -370,7 +375,7 @@ Pollutant removed (g/yr) = Leaf Area (m²) × Rate (g/m²/yr)
 
 ---
 
-## 7. Species Database
+## 9. Species Database
 
 ### 7.1 Data sources
 
@@ -404,7 +409,7 @@ When looking up allometric coefficients, the engine follows a 3-tier fallback:
 
 ---
 
-## 8. Multi-Year Growth Forecast
+## 10. Multi-Year Growth Forecast
 
 ### 8.1 Method
 
@@ -437,7 +442,7 @@ Over time, height grows as a function of the forecasted DBH, recalculating the h
 
 ---
 
-## 9. Differences from i-Tree Eco
+## 11. Differences from i-Tree Eco
 
 ### Summary comparison table
 
@@ -453,11 +458,11 @@ Over time, height grows as a function of the forecasted DBH, recalculating the h
 | Mortality | Yes (net sequestration) | No (gross only) | Moderate — gross is standard for planting plans |
 | Energy savings | Yes | No | Not in scope |
 | CO₂ & O₂ equivalents | Yes | Yes (IPCC & Nowak 2007) | None — identical stoichiometric method |
-| EPA Equivalencies | No (US specific reports only) | Yes (Gasoline, Miles Driven) | High — improves public communication |
+| EPA Equivalencies | No (US specific reports only) | Yes (Gasoline, Kilometers Driven) | High — improves public communication |
 
 ---
 
-## 10. References
+## 12. References
 
 ### Primary allometric models
 

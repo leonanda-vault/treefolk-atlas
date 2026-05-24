@@ -82,8 +82,8 @@ class BiomassResult:
     co2_storage_kg: float
     co2_sequestration_kg: float
     o2_production_kg_yr: float
-    epa_gasoline_gallons_yr: float
-    epa_miles_driven_yr: float
+    epa_gasoline_liters_yr: float
+    epa_km_driven_yr: float
     
     # Optional extended metrics for backwards compatibility
     stormwater_litres: float = 0.0
@@ -120,8 +120,8 @@ class ForecastRow:
     co2_storage_kg: float
     co2_sequestration_kg: float
     o2_production_kg_yr: float
-    epa_gasoline_gallons_yr: float
-    epa_miles_driven_yr: float
+    epa_gasoline_liters_yr: float
+    epa_km_driven_yr: float
     stormwater_litres: float
     pm25_removed_g: float
     no2_removed_g: float
@@ -349,8 +349,8 @@ def calculate_biomass(
     
     co2_seq = seq * CO2_RATIO
     o2_prod = seq * 2.6667
-    epa_gallons = (co2_seq / 1000.0) * 112.18
-    epa_miles = (co2_seq / 1000.0) * 2564.0
+    epa_liters = (co2_seq / 1000.0) * 112.18 * 3.78541
+    epa_km = (co2_seq / 1000.0) * 2564.0 * 1.60934
 
     # Pollution/Stormwater
     pollution = estimate_pollution_removal(dbh_cm)
@@ -387,8 +387,8 @@ def calculate_biomass(
         co2_storage_kg=round(co2_storage, 2),
         co2_sequestration_kg=round(co2_seq, 2),
         o2_production_kg_yr=round(o2_prod, 2),
-        epa_gasoline_gallons_yr=round(epa_gallons, 2),
-        epa_miles_driven_yr=round(epa_miles, 2),
+        epa_gasoline_liters_yr=round(epa_liters, 2),
+        epa_km_driven_yr=round(epa_km, 2),
         stormwater_litres=round(sw, 2),
         pm25_removed_g=pollution.pm25_g,
         no2_removed_g=pollution.no2_g,
@@ -880,8 +880,8 @@ def forecast_growth(
         # Convert seq back to CO2, O2, EPA
         co2_seq = seq * 3.6663
         o2_prod = seq * 2.6667
-        epa_gallons = (co2_seq / 1000.0) * 112.18
-        epa_miles = (co2_seq / 1000.0) * 2564.0
+        epa_liters = (co2_seq / 1000.0) * 112.18 * 3.78541
+        epa_km = (co2_seq / 1000.0) * 2564.0 * 1.60934
 
         rows.append(ForecastRow(
             year=yr,
@@ -894,8 +894,8 @@ def forecast_growth(
             co2_storage_kg=bio.co2_storage_kg,
             co2_sequestration_kg=round(co2_seq, 2),
             o2_production_kg_yr=round(o2_prod, 2),
-            epa_gasoline_gallons_yr=round(epa_gallons, 2),
-            epa_miles_driven_yr=round(epa_miles, 2),
+            epa_gasoline_liters_yr=round(epa_liters, 2),
+            epa_km_driven_yr=round(epa_km, 2),
             stormwater_litres=stormwater,
             pm25_removed_g=pollution.pm25_g,
             no2_removed_g=pollution.no2_g,

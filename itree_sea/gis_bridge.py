@@ -233,8 +233,8 @@ def enrich_geodataframe(
         "co2_storage_kg": [],
         "co2_sequestration_kg": [],
         "o2_production_kg_yr": [],
-        "epa_gasoline_gallons_yr": [],
-        "epa_miles_driven_yr": [],
+        "epa_gasoline_liters_yr": [],
+        "epa_km_driven_yr": [],
         "stormwater_l": [],
         "pm25_removed_g": [],
         "no2_removed_g": [],
@@ -298,8 +298,8 @@ def enrich_geodataframe(
         result_cols["co2_storage_kg"].append(bio.co2_storage_kg)
         result_cols["co2_sequestration_kg"].append(bio.co2_sequestration_kg)
         result_cols["o2_production_kg_yr"].append(bio.o2_production_kg_yr)
-        result_cols["epa_gasoline_gallons_yr"].append(bio.epa_gasoline_gallons_yr)
-        result_cols["epa_miles_driven_yr"].append(bio.epa_miles_driven_yr)
+        result_cols["epa_gasoline_liters_yr"].append(bio.epa_gasoline_liters_yr)
+        result_cols["epa_km_driven_yr"].append(bio.epa_km_driven_yr)
         result_cols["stormwater_l"].append(stormwater)
         result_cols["pm25_removed_g"].append(pollution.pm25_g)
         result_cols["no2_removed_g"].append(pollution.no2_g)

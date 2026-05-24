@@ -54,7 +54,10 @@ TRANSLATIONS = {
         "env_equiv": "🌎 Environmental Equivalencies",
         "o2_produced": "Oxygen Produced",
         "gasoline_saved": "Gasoline Saved",
-        "miles_avoided": "Miles Driven Avoided",
+        "km_avoided": "Drive Avoided",
+        "car_avoided": "Car Travel Avoided",
+        "motorcycle_avoided": "Motorcycle Travel Avoided",
+        "smartphones_charged": "Smartphones Charged",
         "carbon_by_species": "Carbon Storage by Species",
         "carbon_by_layer": "Carbon Storage by Layer",
         "no_layer_data": "No layer data available.",
@@ -301,8 +304,9 @@ TRANSLATIONS = {
         "trees_count": "{n} trees",
         "species_count_msg": "{n} species",
         "units_abbr_t": "t",
-        "units_abbr_gallons": "gallons",
-        "units_abbr_miles": "miles"
+        "units_abbr_liters": "liters",
+        "units_abbr_km": "km",
+        "units_abbr_charges": "charges"
     },
     "Bahasa Indonesia": {
         "title": "Treefolk Atlas",
@@ -357,7 +361,10 @@ TRANSLATIONS = {
         "env_equiv": "🌎 Kesetaraan Lingkungan",
         "o2_produced": "Oksigen yang Dihasilkan",
         "gasoline_saved": "Bensin yang Dihemat",
-        "miles_avoided": "Jarak Mengemudi yang Dihindari",
+        "km_avoided": "Jarak Mengemudi yang Dihindari",
+        "car_avoided": "Perjalanan Mobil Dihindari",
+        "motorcycle_avoided": "Perjalanan Motor Dihindari",
+        "smartphones_charged": "Pengisian Daya Ponsel",
         "carbon_by_species": "Penyimpanan Karbon berdasarkan Spesies",
         "carbon_by_layer": "Penyimpanan Karbon berdasarkan Layer",
         "no_layer_data": "Data layer tidak tersedia.",
@@ -604,8 +611,9 @@ TRANSLATIONS = {
         "trees_count": "{n} pohon",
         "species_count_msg": "{n} spesies",
         "units_abbr_t": "ton",
-        "units_abbr_gallons": "galon",
-        "units_abbr_miles": "mil"
+        "units_abbr_liters": "liter",
+        "units_abbr_km": "km",
+        "units_abbr_charges": "kali"
     }
 }
 
