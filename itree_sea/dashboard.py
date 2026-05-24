@@ -31,7 +31,14 @@ st.set_page_config(
 
 # ── Auto-initialize and seed SQLite database if missing or empty ──
 import sqlite3
-from itree_sea.config import DATABASE_PATH
+
+try:
+    from itree_sea.config import DATABASE_PATH, SITE_PROFILES, DEFAULT_SITE_PROFILE
+    from itree_sea.simulation import project_coordinates, compute_simulation
+    from itree_sea.translations import t
+except KeyError:
+    import streamlit as st
+    st.rerun()
 
 def ensure_database_is_ready():
     from itree_sea.database import init_db, seed_from_csv
@@ -178,9 +185,6 @@ PLOT_LAYOUT = dict(
 )
 
 
-from itree_sea.config import SITE_PROFILES, DEFAULT_SITE_PROFILE
-from itree_sea.simulation import project_coordinates, compute_simulation
-from itree_sea.translations import t
 import json
 
 
