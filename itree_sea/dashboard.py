@@ -138,7 +138,7 @@ st.markdown("""
         [data-testid="stHorizontalBlock"] {
             flex-direction: column !important;
         }
-        [data-testid="stHorizontalBlock"] > [data-testid="column"] {
+        [data-testid="stHorizontalBlock"] > div {
             width: 100% !important;
             max-width: 100% !important;
         }
@@ -166,8 +166,15 @@ PLOT_LAYOUT = dict(
     paper_bgcolor="rgba(0,0,0,0)",
     plot_bgcolor="rgba(0,0,0,0)",
     font=dict(family="Inter", color="#c0c0c0"),
-    margin=dict(l=40, r=20, t=40, b=40),
-    legend=dict(bgcolor="rgba(0,0,0,0)"),
+    margin=dict(l=40, r=20, t=40, b=80),
+    legend=dict(
+        bgcolor="rgba(0,0,0,0)",
+        orientation="h",
+        yanchor="top",
+        y=-0.2,
+        xanchor="center",
+        x=0.5
+    ),
 )
 
 
