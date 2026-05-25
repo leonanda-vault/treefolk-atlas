@@ -63,6 +63,8 @@ from itree_sea.config import (
     DEFAULT_CROWN_MODIFIER,
     DEFAULT_SPECIES_LAI,
     DEFAULT_FOLIAGE_FRACTION,
+    DEFAULT_DBH_MAX,
+    DEFAULT_GROWTH_K,
 )
 from itree_sea.database import AllometricCoefficients
 
@@ -249,6 +251,7 @@ def calculate_agb(
     is_urban: bool = True,
     is_palm: bool = False,
     lai: Optional[float] = None,
+    cle: float = 5.0,
 ) -> float:
     """Calculate aboveground dry-weight biomass (kg).
 
@@ -268,6 +271,9 @@ def calculate_agb(
 
     sci_name = coefficients.species if coefficients else None
 
+    # Calculate CLE-based urban adjustment factor
+    f_urban = max(0.80, min(1.00, 0.80 + 0.04 * (5.0 - cle)))
+
     # ── Palms (Monocots) Cylindrical Model ──
     if is_palm:
         if height_m is None or height_m <= 0:
@@ -283,7 +289,7 @@ def calculate_agb(
         # Biomass = Volume * wood_density * 1000 kg = 0.07854 * wood_density * D^2 * H kg
         agb = 0.07854 * wood_density * (dbh_cm ** 2) * height_m
         if is_urban:
-            agb *= URBAN_ADJUSTMENT
+            agb *= f_urban
         return max(agb, 0.0)
 
     # ── Non-palms (Dicots) ──
@@ -353,7 +359,7 @@ def calculate_agb(
     agb = woody_adjusted + foliage_biomass
 
     if is_urban:
-        agb *= URBAN_ADJUSTMENT
+        agb *= f_urban
 
     return max(agb, 0.0)
 
@@ -373,6 +379,8 @@ def calculate_biomass(
     lai: float = DEFAULT_LAI,
     rain_events: int = ANNUAL_RAIN_EVENTS,
     pollution_multiplier: float = 1.0,
+    cle: float = 5.0,
+    weather_data: Optional[List[Dict[str, float]]] = None,
 ) -> BiomassResult:
     """Calculate full biomass and carbon storage for one tree.
 
@@ -397,6 +405,7 @@ def calculate_biomass(
         is_urban=is_urban,
         is_palm=is_palm,
         lai=resolved_lai,
+        cle=cle,
     )
     agb *= cond_mult
 
@@ -431,12 +440,22 @@ def calculate_biomass(
         palm_h_growth = coefficients.palm_height_growth_m if hasattr(coefficients, "palm_height_growth_m") else DEFAULT_PALM_HEIGHT_GROWTH_M
         height_next = display_height + palm_h_growth
     else:
-        delta_d = coefficients.true_growth_rate_cm if hasattr(coefficients, "true_growth_rate_cm") else DEFAULT_TRUE_GROWTH_RATE_CM
+        # Chapman-Richards growth increment
+        dbh_max_val = coefficients.dbh_max if hasattr(coefficients, "dbh_max") else DEFAULT_DBH_MAX
+        growth_k_val = coefficients.growth_k if hasattr(coefficients, "growth_k") else DEFAULT_GROWTH_K
+        if dbh_cm <= 0:
+            delta_d = coefficients.true_growth_rate_cm if hasattr(coefficients, "true_growth_rate_cm") else DEFAULT_TRUE_GROWTH_RATE_CM
+        elif dbh_cm >= dbh_max_val:
+            delta_d = 0.0
+        else:
+            delta_d = growth_k_val * dbh_cm * (((dbh_max_val / dbh_cm) ** (1.0 / 3.0)) - 1.0)
+            delta_d = max(delta_d, 0.0)
+            
         height_next = None
         if display_height is not None and display_height > 0:
             height_next = display_height * ((dbh_cm + delta_d) / dbh_cm) ** 0.5
 
-    c_next = calculate_carbon_storage(dbh_cm + delta_d, height_next, coefficients, is_urban, is_palm, resolved_lai)
+    c_next = calculate_carbon_storage(dbh_cm + delta_d, height_next, coefficients, is_urban, is_palm, resolved_lai, cle=cle)
     seq = max(c_next - carbon, 0.0)
     
     co2_seq = seq * CO2_RATIO
@@ -447,8 +466,8 @@ def calculate_biomass(
     crown_modifier = coefficients.crown_modifier if hasattr(coefficients, "crown_modifier") else DEFAULT_CROWN_MODIFIER
 
     # Pollution/Stormwater
-    pollution = estimate_pollution_removal(dbh_cm, resolved_lai, pollution_multiplier, crown_modifier)
-    sw = estimate_stormwater_interception(dbh_cm, resolved_lai, rain_events, crown_modifier)
+    pollution = estimate_pollution_removal(dbh_cm, resolved_lai, pollution_multiplier, crown_modifier, display_height, weather_data)
+    sw = estimate_stormwater_interception(dbh_cm, resolved_lai, rain_events, crown_modifier, weather_data)
 
     # Determine equation used
     if height_m is not None and height_m > 0:
@@ -491,13 +510,14 @@ def calculate_carbon_storage(
     is_urban: bool = True,
     is_palm: bool = False,
     lai: Optional[float] = None,
+    cle: float = 5.0,
 ) -> float:
     """Shorthand: return only the carbon storage (kg) for a given DBH.
 
     Used internally by the sequestration calculator.
     """
     # This simplified version uses the carbon fraction directly
-    agb = calculate_agb(dbh_cm, height_m, coefficients.wood_density, coefficients, is_urban, is_palm, lai)
+    agb = calculate_agb(dbh_cm, height_m, coefficients.wood_density, coefficients, is_urban, is_palm, lai, cle=cle)
     total = agb * (1.0 + ROOT_SHOOT_RATIO)
     carbon_frac = CARBON_FRACTION_PALM if is_palm else CARBON_FRACTION_GENERAL
     return total * carbon_frac
@@ -511,6 +531,7 @@ def calculate_sequestration(
     is_urban: bool = True,
     is_palm: bool = False,
     lai: float = DEFAULT_LAI,
+    cle: float = 5.0,
 ) -> SequestrationResult:
     """Calculate annual gross carbon sequestration (delta-storage method).
 
@@ -535,6 +556,8 @@ def calculate_sequestration(
         Use palm carbon fraction.
     lai : float
         Leaf Area Index.
+    cle : float
+        Crown Light Exposure (0 to 5).
 
     Returns
     -------
@@ -544,10 +567,16 @@ def calculate_sequestration(
         delta_d = 0.0
         delta_h = coefficients.palm_height_growth_m if hasattr(coefficients, "palm_height_growth_m") else DEFAULT_PALM_HEIGHT_GROWTH_M
     else:
-        if hasattr(coefficients, "true_growth_rate_cm") and coefficients.true_growth_rate_cm is not None and coefficients.true_growth_rate_cm > 0:
-            delta_d = coefficients.true_growth_rate_cm
+        # Chapman-Richards growth increment
+        dbh_max_val = coefficients.dbh_max if hasattr(coefficients, "dbh_max") else DEFAULT_DBH_MAX
+        growth_k_val = coefficients.growth_k if hasattr(coefficients, "growth_k") else DEFAULT_GROWTH_K
+        if dbh_cm <= 0:
+            delta_d = coefficients.true_growth_rate_cm if hasattr(coefficients, "true_growth_rate_cm") else DEFAULT_TRUE_GROWTH_RATE_CM
+        elif dbh_cm >= dbh_max_val:
+            delta_d = 0.0
         else:
-            delta_d = GROWTH_RATE_MAP.get(growth_rate.lower().strip(), GROWTH_RATE_MAP["moderate"])
+            delta_d = growth_k_val * dbh_cm * (((dbh_max_val / dbh_cm) ** (1.0 / 3.0)) - 1.0)
+            delta_d = max(delta_d, 0.0)
         delta_h = 0.0
 
     # Resolve starting height if missing and needed for next year
@@ -575,8 +604,8 @@ def calculate_sequestration(
     spec_lai = coefficients.species_lai if hasattr(coefficients, "species_lai") else DEFAULT_SPECIES_LAI
     resolved_lai = spec_lai * site_lai_factor
 
-    c_now = calculate_carbon_storage(dbh_cm, height_m, coefficients, is_urban, is_palm, resolved_lai)
-    c_next = calculate_carbon_storage(dbh_next, height_next, coefficients, is_urban, is_palm, resolved_lai)
+    c_now = calculate_carbon_storage(dbh_cm, height_m, coefficients, is_urban, is_palm, resolved_lai, cle=cle)
+    c_next = calculate_carbon_storage(dbh_next, height_next, coefficients, is_urban, is_palm, resolved_lai, cle=cle)
 
     sequestration = c_next - c_now
     was_capped = False
@@ -627,24 +656,86 @@ def estimate_leaf_area(dbh_cm: float, lai: float = DEFAULT_LAI, crown_modifier: 
     return estimate_crown_area(dbh_cm, crown_modifier) * lai
 
 
+def calculate_penman_evap(temp_c: float, rh_pct: float, wind_speed_ms: float) -> float:
+    """Calculate daily potential evaporation from wet leaves using the Penman equation (mm/day)."""
+    t = temp_c
+    es = 0.6108 * math.exp(17.27 * t / (t + 237.3))
+    delta = (4098.0 * es) / ((t + 237.3) ** 2)
+    gamma = 0.066
+    ea = es * (rh_pct / 100.0)
+    f_u = 2.626 * (1.0 + 0.54 * wind_speed_ms)
+    R_n = 2.5
+    E = (delta * R_n + gamma * f_u * (es - ea)) / (delta + gamma)
+    return max(E, 0.0)
+
+
+def get_default_weather() -> List[Dict[str, float]]:
+    """Generate 365 days of default tropical weather data (Singapore/SE Asia analog)."""
+    weather = []
+    for day in range(365):
+        is_rain_day = (day % 2 == 0)
+        if is_rain_day:
+            precip = 10.0
+            rh = 85.0
+            temp = 26.5
+        else:
+            precip = 0.0
+            rh = 75.0
+            temp = 27.5
+        
+        weather.append({
+            "temp_c": temp,
+            "rh_pct": rh,
+            "wind_speed_ms": 2.0,
+            "precip_mm": precip
+        })
+    return weather
+
+
+def calculate_daily_water_balance_internal(
+    dbh_cm: float,
+    lai: float,
+    crown_modifier: Optional[float],
+    weather_data: List[Dict[str, float]],
+) -> float:
+    crown_area = estimate_crown_area(dbh_cm, crown_modifier)
+    c_max = lai * 0.2
+    s_t = 0.0
+    total_evap_mm = 0.0
+    for day in weather_data:
+        precip = day.get("precip_mm", 0.0)
+        temp = day.get("temp_c", 27.0)
+        rh = day.get("rh_pct", 80.0)
+        wind = day.get("wind_speed_ms", 2.0)
+        
+        E_t = calculate_penman_evap(temp, rh, wind)
+        interception = min(precip, c_max - s_t)
+        actual_evap = min(E_t, s_t + interception)
+        s_t = s_t + interception - actual_evap
+        s_t = max(0.0, s_t)
+        total_evap_mm += actual_evap
+    return total_evap_mm * crown_area
+
+
 def estimate_stormwater_interception(
     dbh_cm: float,
     lai: float = DEFAULT_LAI,
     rain_events: int = ANNUAL_RAIN_EVENTS,
     crown_modifier: Optional[float] = None,
+    weather_data: Optional[List[Dict[str, float]]] = None,
 ) -> float:
     """Estimate annual avoided stormwater runoff (litres).
 
-    Uses the simplified canopy storage proxy:
-        Annual Interception = Crown Area × LAI × S_L × N_events × 1000
+    Uses a daily wet-canopy water balance model driven by Penman evaporation.
     """
-    crown_area = estimate_crown_area(dbh_cm, crown_modifier)
-    # Max canopy storage depth per event (m)
-    storage_depth = lai * SPECIFIC_LEAF_STORAGE_M
-    # Annual volume in m³
-    annual_m3 = crown_area * storage_depth * rain_events
-    # Convert to litres
-    return round(annual_m3 * 1000.0, 1)
+    if weather_data is None:
+        default_weather = get_default_weather()
+        raw_intercept = calculate_daily_water_balance_internal(dbh_cm, lai, crown_modifier, default_weather)
+        scale = rain_events / 183.0
+        return round(raw_intercept * scale, 1)
+    else:
+        intercept = calculate_daily_water_balance_internal(dbh_cm, lai, crown_modifier, weather_data)
+        return round(intercept, 1)
 
 
 def estimate_stormwater_from_hourly(
@@ -730,6 +821,99 @@ def derive_rain_events(hourly_rain_mm: List[float], min_event_mm: float = 1.0) -
                 in_event = False
 
     return events
+@dataclass
+class PollutionResult:
+    """Annual pollution removal for one tree."""
+    pm25_g: float
+    no2_g: float
+    o3_g: float
+    so2_g: float
+    total_g: float
+    leaf_area_m2: float
+
+
+def calculate_baldocchi_deposition(
+    dbh_cm: float,
+    height_m: float,
+    lai: float,
+    crown_modifier: Optional[float],
+    weather_data: List[Dict[str, float]],
+    pollution_multiplier: float = 1.0,
+) -> PollutionResult:
+    la = estimate_leaf_area(dbh_cm, lai, crown_modifier)
+    SEC_PER_DAY = 86400.0
+    conc_pm25 = (12.0 * pollution_multiplier) * 1e-6
+    conc_no2 = (40.0 * pollution_multiplier) * 1e-6
+    conc_o3 = (100.0 * pollution_multiplier) * 1e-6
+    conc_so2 = (40.0 * pollution_multiplier) * 1e-6
+    
+    tot_pm25_g = 0.0
+    tot_no2_g = 0.0
+    tot_o3_g = 0.0
+    tot_so2_g = 0.0
+    
+    for day in weather_data:
+        wind = max(day.get("wind_speed_ms", 2.0), 0.1)
+        h = max(height_m, 2.0)
+        R_a = math.log(10.0 + 20.0 / h) / (0.16 * wind)
+        R_b = 84.0 / math.sqrt(wind)
+        
+        R_s_day = 100.0
+        R_m = 10.0
+        R_cut = 2000.0
+        R_g = 1000.0
+        R_c_gas_day = 1.0 / (1.0 / (R_s_day + R_m) + 1.0 / R_cut + 1.0 / R_g)
+        V_d_gas_day = 1.0 / (R_a + R_b + R_c_gas_day)
+        
+        R_s_night = 10000.0
+        R_c_gas_night = 1.0 / (1.0 / (R_s_night + R_m) + 1.0 / R_cut + 1.0 / R_g)
+        V_d_gas_night = 1.0 / (R_a + R_b + R_c_gas_night)
+        
+        V_d_gas = 0.5 * V_d_gas_day + 0.5 * V_d_gas_night
+        
+        R_c_pm25 = 200.0
+        V_d_pm25 = 1.0 / (R_a + R_b + R_c_pm25)
+        
+        tot_pm25_g += la * V_d_pm25 * conc_pm25 * SEC_PER_DAY
+        tot_no2_g += la * V_d_gas * conc_no2 * SEC_PER_DAY
+        tot_o3_g += la * V_d_gas * conc_o3 * SEC_PER_DAY
+        tot_so2_g += la * V_d_gas * conc_so2 * SEC_PER_DAY
+        
+    return PollutionResult(
+        pm25_g=round(tot_pm25_g, 2),
+        no2_g=round(tot_no2_g, 2),
+        o3_g=round(tot_o3_g, 2),
+        so2_g=round(tot_so2_g, 2),
+        total_g=round(tot_pm25_g + tot_no2_g + tot_o3_g + tot_so2_g, 2),
+        leaf_area_m2=round(la, 2),
+    )
+
+
+def estimate_pollution_removal(
+    dbh_cm: float,
+    lai: float = DEFAULT_LAI,
+    pollution_multiplier: float = 1.0,
+    crown_modifier: Optional[float] = None,
+    height_m: Optional[float] = None,
+    weather_data: Optional[List[Dict[str, float]]] = None,
+) -> PollutionResult:
+    """Estimate annual air pollution removal (grams) using area-based proxy.
+
+    Pollutant removed = Leaf Area (m²) × removal rate (g/m²/yr) × multiplier
+    """
+    if height_m is None or height_m <= 0:
+        height_m = estimate_height(dbh_cm)
+    if weather_data is None:
+        weather_data = get_default_weather()
+        
+    return calculate_baldocchi_deposition(
+        dbh_cm=dbh_cm,
+        height_m=height_m,
+        lai=lai,
+        crown_modifier=crown_modifier,
+        weather_data=weather_data,
+        pollution_multiplier=pollution_multiplier,
+    )
 
 
 def derive_pollution_multiplier(
@@ -773,47 +957,6 @@ def derive_pollution_multiplier(
     return round(weighted_sum / total_weight, 3)
 
 
-# ──────────────────────────────────────────────────────────────────────
-# 6. AIR POLLUTION REMOVAL
-# ──────────────────────────────────────────────────────────────────────
-
-@dataclass
-class PollutionResult:
-    """Annual pollution removal for one tree."""
-    pm25_g: float
-    no2_g: float
-    o3_g: float
-    so2_g: float
-    total_g: float
-    leaf_area_m2: float
-
-
-def estimate_pollution_removal(
-    dbh_cm: float,
-    lai: float = DEFAULT_LAI,
-    pollution_multiplier: float = 1.0,
-    crown_modifier: Optional[float] = None,
-) -> PollutionResult:
-    """Estimate annual air pollution removal (grams) using area-based proxy.
-
-    Pollutant removed = Leaf Area (m²) × removal rate (g/m²/yr) × multiplier
-    """
-    la = estimate_leaf_area(dbh_cm, lai, crown_modifier)
-
-    pm25 = la * POLLUTION_RATES.pm25 * pollution_multiplier
-    no2 = la * POLLUTION_RATES.no2 * pollution_multiplier
-    o3 = la * POLLUTION_RATES.o3 * pollution_multiplier
-    so2 = la * POLLUTION_RATES.so2 * pollution_multiplier
-
-    return PollutionResult(
-        pm25_g=round(pm25, 2),
-        no2_g=round(no2, 2),
-        o3_g=round(o3, 2),
-        so2_g=round(so2, 2),
-        total_g=round(pm25 + no2 + o3 + so2, 2),
-        leaf_area_m2=round(la, 2),
-    )
-
 
 # ──────────────────────────────────────────────────────────────────────
 # 7. MULTI-YEAR GROWTH FORECAST
@@ -830,11 +973,13 @@ def forecast_growth(
     lai: float = DEFAULT_LAI,
     rain_events: int = ANNUAL_RAIN_EVENTS,
     pollution_multiplier: float = 1.0,
+    cle: float = 5.0,
+    weather_data: Optional[List[Dict[str, float]]] = None,
 ) -> List[ForecastRow]:
     """Project tree growth and ecosystem benefits over multiple years.
 
-    Starting from ``initial_dbh_cm``, the function increments DBH by
-    the annual growth rate each year, recalculates all benefits, and
+    Starting from ``initial_dbh_cm``, the function increments DBH using the
+    Chapman-Richards sigmoidal model each year, recalculates all benefits, and
     returns a list of ``ForecastRow`` objects suitable for export to CSV.
 
     Parameters
@@ -855,16 +1000,18 @@ def forecast_growth(
         Use palm carbon fraction.
     lai : float
         Leaf Area Index.
+    cle : float
+        Crown Light Exposure (0 to 5).
+    weather_data : list of dict, optional
+        Daily meteorological time series for advanced models.
 
     Returns
     -------
     list of ForecastRow
     """
     if is_palm:
-        delta_d = 0.0
         delta_h = coefficients.palm_height_growth_m if hasattr(coefficients, "palm_height_growth_m") else DEFAULT_PALM_HEIGHT_GROWTH_M
     else:
-        delta_d = coefficients.true_growth_rate_cm if hasattr(coefficients, "true_growth_rate_cm") else DEFAULT_TRUE_GROWTH_RATE_CM
         delta_h = 0.0
 
     # Resolve starting height
@@ -886,25 +1033,13 @@ def forecast_growth(
     resolved_lai = spec_lai * site_lai_factor
     
     crown_modifier = coefficients.crown_modifier if hasattr(coefficients, "crown_modifier") else DEFAULT_CROWN_MODIFIER
+    dbh_max_val = coefficients.dbh_max if hasattr(coefficients, "dbh_max") else DEFAULT_DBH_MAX
+    growth_k_val = coefficients.growth_k if hasattr(coefficients, "growth_k") else DEFAULT_GROWTH_K
+
+    dbh = initial_dbh_cm
+    height = initial_height_m
 
     for yr in range(years + 1):
-        if is_palm:
-            dbh = initial_dbh_cm
-            height = initial_height_m + delta_h * yr
-        else:
-            dbh = initial_dbh_cm + delta_d * yr
-            # Height grows proportionally (power 0.5 — decelerating)
-            if initial_dbh_cm > 0:
-                height = initial_height_m * (dbh / initial_dbh_cm) ** 0.5
-            else:
-                height = estimate_height(
-                    dbh,
-                    coefficients.height_model_a,
-                    coefficients.height_model_b,
-                    coefficients.height_model_c,
-                    coefficients.height_model_form,
-                )
-
         # Biomass and carbon
         bio = calculate_biomass(
             dbh_cm=dbh,
@@ -915,6 +1050,8 @@ def forecast_growth(
             lai=lai,
             rain_events=rain_events,
             pollution_multiplier=pollution_multiplier,
+            cle=cle,
+            weather_data=weather_data,
         )
 
         # Sequestration (delta from previous year)
@@ -922,24 +1059,21 @@ def forecast_growth(
 
         # Cap check
         if prev_carbon >= CARBON_STORAGE_CAP:
-            step_size = delta_h if is_palm else delta_d
+            if is_palm:
+                step_size = delta_h
+            else:
+                if dbh <= 0:
+                    step_size = coefficients.true_growth_rate_cm if hasattr(coefficients, "true_growth_rate_cm") else DEFAULT_TRUE_GROWTH_RATE_CM
+                elif dbh >= dbh_max_val:
+                    step_size = 0.0
+                else:
+                    step_size = growth_k_val * dbh * (((dbh_max_val / dbh) ** (1.0 / 3.0)) - 1.0)
+                    step_size = max(step_size, 0.0)
             max_seq = SEQUESTRATION_RATE_CAP * (step_size if step_size > 0 else 1.0)
             seq = min(seq, max_seq)
 
         seq = max(seq, 0.0)
         prev_carbon = bio.carbon_storage_kg
-
-        # Stormwater
-        stormwater = estimate_stormwater_interception(dbh, resolved_lai, rain_events, crown_modifier)
-
-        # Pollution
-        pollution = estimate_pollution_removal(dbh, resolved_lai, pollution_multiplier, crown_modifier)
-
-        # Convert seq back to CO2, O2, EPA
-        co2_seq = seq * 3.6663
-        o2_prod = seq * 2.6667
-        epa_liters = (co2_seq / 1000.0) * 112.18 * 3.78541
-        epa_km = (co2_seq / 1000.0) * 2564.0 * 1.60934
 
         rows.append(ForecastRow(
             year=yr,
@@ -950,15 +1084,43 @@ def forecast_growth(
             carbon_storage_kg=bio.carbon_storage_kg,
             carbon_sequestration_kg=round(seq, 3),
             co2_storage_kg=bio.co2_storage_kg,
-            co2_sequestration_kg=round(co2_seq, 2),
-            o2_production_kg_yr=round(o2_prod, 2),
-            epa_gasoline_liters_yr=round(epa_liters, 2),
-            epa_km_driven_yr=round(epa_km, 2),
-            stormwater_litres=stormwater,
-            pm25_removed_g=pollution.pm25_g,
-            no2_removed_g=pollution.no2_g,
-            o3_removed_g=pollution.o3_g,
-            so2_removed_g=pollution.so2_g,
+            co2_sequestration_kg=round(seq * 3.6663, 2),
+            o2_production_kg_yr=round(seq * 2.6667, 2),
+            epa_gasoline_liters_yr=round((seq * 3.6663 / 1000.0) * 112.18 * 3.78541, 2),
+            epa_km_driven_yr=round((seq * 3.6663 / 1000.0) * 2564.0 * 1.60934, 2),
+            stormwater_litres=bio.stormwater_litres,
+            pm25_removed_g=bio.pm25_removed_g,
+            no2_removed_g=bio.no2_removed_g,
+            o3_removed_g=bio.o3_removed_g,
+            so2_removed_g=bio.so2_removed_g,
         ))
+
+        # Update dbh and height for next year
+        if yr < years:
+            if is_palm:
+                height = height + delta_h
+            else:
+                if dbh <= 0:
+                    delta_d_yr = coefficients.true_growth_rate_cm if hasattr(coefficients, "true_growth_rate_cm") else DEFAULT_TRUE_GROWTH_RATE_CM
+                elif dbh >= dbh_max_val:
+                    delta_d_yr = 0.0
+                else:
+                    delta_d_yr = growth_k_val * dbh * (((dbh_max_val / dbh) ** (1.0 / 3.0)) - 1.0)
+                    delta_d_yr = max(delta_d_yr, 0.0)
+                
+                dbh_next = dbh + delta_d_yr
+                if dbh > 0:
+                    height = height * (dbh_next / dbh) ** 0.5
+                else:
+                    height = estimate_height(
+                        dbh_next,
+                        coefficients.height_model_a,
+                        coefficients.height_model_b,
+                        coefficients.height_model_c,
+                        coefficients.height_model_form,
+                    )
+                dbh = dbh_next
+
+    return rows
 
     return rows

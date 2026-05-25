@@ -110,13 +110,13 @@ flowchart TD
 
 ## 3. Implementation Checklist & Verification Plan
 
-- `[ ]` **Database Schema Update:**
+- `[x]` **Database Schema Update:**
   - Add `dbh_max`, `growth_k`, and Weibull `height_model_a/b/c` to `seed_species.csv` and SQLite schemas.
-- `[ ]` **Growth Engine Refactoring:**
+- `[x]` **Growth Engine Refactoring:**
   - Implement Chapman-Richards equations in `forecast_growth` and `calculate_sequestration`.
-- `[ ]` **Evaporation & Hydrology Implementation:**
+- `[x]` **Evaporation & Hydrology Implementation:**
   - Add standard Penman-Monteith daily canopy water balance to `engine.py`.
-- `[ ]` **Deposition Velocity Model:**
+- `[x]` **Deposition Velocity Model:**
   - Implement Baldocchi resistance equations to replace static deposition rates.
 
 ### Verification Steps

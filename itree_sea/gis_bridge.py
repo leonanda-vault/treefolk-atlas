@@ -251,6 +251,7 @@ def enrich_geodataframe(
         dbh = _safe_float(row.get(GIS_DBH_FIELD), default=15.0)
         height = _safe_float(row.get(GIS_HEIGHT_FIELD), default=None)
         condition = str(row.get(GIS_CONDITION_FIELD, "good")).strip()
+        cle = _safe_float(row.get("cle"), default=5.0) if "cle" in row else 5.0
 
         # Resolve species info
         sp_record = lookup_species(scientific_name=species_name, db_path=db_path)
@@ -273,6 +274,7 @@ def enrich_geodataframe(
             condition=condition,
             is_palm=is_palm,
             lai=lai,
+            cle=cle,
         )
 
         # Sequestration
@@ -283,6 +285,7 @@ def enrich_geodataframe(
             growth_rate=growth_rate,
             is_palm=is_palm,
             lai=lai,
+            cle=cle,
         )
 
         # Resolve LAI and crown modifier for stormwater and pollution
@@ -297,7 +300,7 @@ def enrich_geodataframe(
         stormwater = estimate_stormwater_interception(dbh, resolved_lai, crown_modifier=crown_modifier)
 
         # Pollution
-        pollution = estimate_pollution_removal(dbh, resolved_lai, crown_modifier=crown_modifier)
+        pollution = estimate_pollution_removal(dbh, resolved_lai, crown_modifier=crown_modifier, height_m=height)
 
         # Append
         result_cols["agb_kg"].append(bio.agb_kg)

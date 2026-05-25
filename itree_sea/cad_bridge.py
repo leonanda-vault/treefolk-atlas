@@ -575,6 +575,7 @@ def generate_schedule(
     lai: float = DEFAULT_LAI,
     rain_events: int = 180,
     pollution_multiplier: float = 1.0,
+    cle: float = 5.0,
 ) -> pd.DataFrame:
     """Generate a multi-year planting benefit schedule.
 
@@ -595,6 +596,8 @@ def generate_schedule(
         Number of rain events per year (from site profile).
     pollution_multiplier : float
         Site-specific pollution removal scalar (from site profile).
+    cle : float
+        Crown Light Exposure (0 to 5).
 
     Returns
     -------
@@ -628,6 +631,7 @@ def generate_schedule(
             lai=lai,
             rain_events=rain_events,
             pollution_multiplier=pollution_multiplier,
+            cle=cle,
         )
 
         # Convert forecast rows to schedule rows

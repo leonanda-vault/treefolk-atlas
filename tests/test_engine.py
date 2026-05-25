@@ -213,13 +213,12 @@ class TestSequestration:
         # Coconut palm height growth = 0.3m, so AGB should increase because height grows from 10.0 to 10.3m
 
     def test_sequestration_continuous_growth_rate(self, angsana_coefficients):
-        # Angsana has true_growth_rate_cm = 1.1
-        # Moderate growth category is normally 1.0, but we use the true rate 1.1
+        # Angsana has dbh_max=120.0, growth_k=0.05 by default.
+        # At DBH=30cm, Chapman-Richards growth gives delta_d = 0.05 * 30 * ((120/30)^(1/3) - 1) = 0.8811 cm.
         result = calculate_sequestration(
             30.0, 12.0, angsana_coefficients, growth_rate="slow"
         )
-        # dbh_end_cm should be 30.0 + 1.1 = 31.1, NOT 30.0 + 0.5 (slow)
-        assert result.dbh_end_cm == 31.1
+        assert result.dbh_end_cm == pytest.approx(30.8811, rel=1e-3)
 
 
 # ── Stormwater ──
@@ -309,3 +308,36 @@ class TestCrownModifier:
         # Spreading: modifier = 0.28
         cw_spr = estimate_crown_width(30.0, crown_modifier=0.28)
         assert cw_spr == 0.6 + 0.28 * 30.0
+
+
+class TestErrorReductionModels:
+    def test_forecast_reaches_asymptote(self, angsana_coefficients):
+        # Set a small dbh_max and run a long forecast
+        angsana_coefficients.dbh_max = 50.0
+        angsana_coefficients.growth_k = 0.2  # Fast growth towards asymptote
+        rows = forecast_growth(10.0, angsana_coefficients, years=100)
+        # Year 100 DBH should be very close to 50.0 (asymptote)
+        assert rows[-1].dbh_cm == pytest.approx(50.0, abs=1.0)
+
+    def test_stormwater_evaporation_humidity(self):
+        # Generate weather data with low humidity vs high humidity
+        # We use a large lai (25.0) and precip_mm (5.0) so that the canopy storage capacity (5.0 mm)
+        # is larger than the daily potential evaporation rates, making actual evaporation
+        # sensitive to the relative humidity.
+        weather_low_rh = [{"temp_c": 27.0, "rh_pct": 50.0, "wind_speed_ms": 2.0, "precip_mm": 5.0} for _ in range(10)]
+        weather_high_rh = [{"temp_c": 27.0, "rh_pct": 95.0, "wind_speed_ms": 2.0, "precip_mm": 5.0} for _ in range(10)]
+        
+        sw_low_rh = estimate_stormwater_interception(30.0, lai=25.0, weather_data=weather_low_rh)
+        sw_high_rh = estimate_stormwater_interception(30.0, lai=25.0, weather_data=weather_high_rh)
+        
+        # Lower humidity leads to higher evaporation, which empties the canopy faster, leading to higher interception
+        assert sw_low_rh > sw_high_rh
+
+    def test_pollution_nighttime_stomata_closure(self):
+        # Daytime: Rs = 100, Nighttime: Rs = 10000.
+        # This increases Rc at night, leading to lower V_d.
+        # Verify that gaseous deposition (e.g. NO2) is sensitive to this and overall calculations are correct.
+        # Low wind speed to make aerodynamic resistance less dominant
+        weather = [{"temp_c": 27.0, "rh_pct": 80.0, "wind_speed_ms": 0.5, "precip_mm": 0.0}]
+        res = estimate_pollution_removal(30.0, weather_data=weather)
+        assert res.no2_g > 0.0

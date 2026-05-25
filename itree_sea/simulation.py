@@ -118,6 +118,7 @@ def calculate_single_tree_schedule(
     palm_height_growth_m: Optional[float] = None,
     crown_modifier: Optional[float] = None,
     species_lai: Optional[float] = None,
+    cle: float = 5.0,
 ) -> List[Dict[str, Any]]:
     """Calculate the multi-year forecast schedule for a single simulated tree."""
     # Resolve species details
@@ -150,6 +151,7 @@ def calculate_single_tree_schedule(
         lai=lai,
         rain_events=rain_events,
         pollution_multiplier=pollution_multiplier,
+        cle=cle,
     )
 
     # Condition reduces benefits proportionally
@@ -189,6 +191,7 @@ def compute_simulation(
     rain_events: int = 180,
     pollution_multiplier: float = 1.0,
     db_path: Optional[str] = None,
+    cle: float = 5.0,
 ) -> pd.DataFrame:
     """Compute the simulated schedule DataFrame by applying removals and manual additions.
 
@@ -251,6 +254,7 @@ def compute_simulation(
             palm_height_growth_m=p.get("palm_height_growth_m"),
             crown_modifier=p.get("crown_modifier"),
             species_lai=p.get("species_lai"),
+            cle=p.get("cle", cle),
         )
         
         # Add spatial coordinates and identifiers to yearly rows

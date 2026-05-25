@@ -62,7 +62,7 @@ def ensure_database_is_ready():
                 # Table exists, check if the new columns are present
                 cursor.execute("PRAGMA table_info(species_lookup);")
                 columns = [col[1] for col in cursor.fetchall()]
-                if "true_growth_rate_cm" not in columns:
+                if "dbh_max" not in columns:
                     st.warning("Database schema is outdated. Re-initializing...")
                     # Drop tables to recreate them with new DDL
                     cursor.execute("DROP TABLE IF EXISTS species_lookup;")

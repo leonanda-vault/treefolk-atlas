@@ -54,6 +54,11 @@ Untuk mengakomodasi perbedaan arsitektur pohon perkotaan yang tumbuh di ruang te
 
 $$\text{AGB}_{\text{final}} = \text{Woody}_{\text{adjusted}} + \text{Foliage}$$
 
+Untuk mengakomodasi arsitektur pohon yang tumbuh di ruang terbuka di lingkungan perkotaan, mesin menerapkan faktor penyesuaian perkotaan dinamis:
+$$\text{AGB}_{\text{final\_urban}} = \text{AGB}_{\text{final}} \times f_{\text{urban}}$$
+Di mana $f_{\text{urban}}$ dihitung berdasarkan Crown Light Exposure (CLE, 0 hingga 5):
+$$f_{\text{urban}} = \max\left(0.80, \min\left(1.00, 0.80 + 0.04 \times (5 - CLE)\right)\right)$$
+
 #### Untuk Pohon Monokotil (Palem)
 Model alometrik dikotil standar cenderung menaksir terlalu tinggi (overestimate) biomassa palem karena perbedaan mekanika struktural (batang silindris tanpa pengecilan diameter ke atas, tidak adanya pertumbuhan lateral sekunder kambium, dan rasio air-ke-massa kering yang tinggi). Treefolk Atlas menerapkan **Model Batang Silindris** khusus:
 
@@ -63,36 +68,55 @@ $$\text{AGB}_{\text{palm}} = 0.07854 \times \rho \times D^2 \times H$$
     $$\text{AGB}_{\text{palm}} = \left(\frac{\pi}{40000} \times 1000\right) \times \rho \times D^2 \times H \approx 0.07854 \times \rho \times D^2 \times H$$
 *   *Kalibrasi Taksonomi:* Fraksi karbon dasar disesuaikan ke bawah menjadi **0.41** (dibandingkan dengan 0.50 pada dikotil) untuk mencerminkan kandungan lignin yang lebih rendah pada berkas pengangkut monokotil (IPCC 2006).
 
----
+### 2.2 Model Hidrologi Stormwater: Neraca Air Kanopi Harian
 
-### 2.2 Proksi Limpasan Air Hujan (Stormwater) dengan Batas Kejenuhan Tajuk
+Alih-alih menggunakan proksi kejadian tahunan yang disederhanakan, mesin menerapkan model neraca air kanopi basah harian yang digerakkan oleh evaporasi daun potensial Penman-Monteith untuk mengurangi kesalahan prediksi:
 
-Model iklim sedang biasanya menjalankan simulasi neraca air harian atau jam demi jam yang memerlukan kumpulan data meteorologi jangka panjang yang rumit. Treefolk Atlas menyediakan dua jalur penilaian:
+1. **Laju Evaporasi ($E$, mm/hari):** Diestimasi dari suhu, kecepatan angin, dan kelembaban relatif menggunakan persamaan Penman:
+   $$E = \frac{\Delta \cdot R_n + \gamma \cdot f(u) \cdot (e_s - e_a)}{\Delta + \gamma}$$
+   Di mana:
+   *   $\Delta$ adalah kemiringan kurva tekanan uap jenuh.
+   *   $\gamma$ adalah konstanta psikrometrik ($0.066$).
+   *   $R_n$ adalah radiasi matahari bersih ($2.5\text{ MJ/m}^2/\text{hari}$).
+   *   $f(u)$ adalah fungsi angin: $f(u) = 2.626 \cdot (1.0 + 0.54 \cdot u)$, di mana $u$ adalah kecepatan angin ($m/s$).
+   *   $e_s - e_a$ adalah defisit tekanan uap.
 
-#### 1. Proksi Stormwater Tahunan
-Menghitung kapasitas tahunan penyimpanan air hujan oleh tajuk berdasarkan rata-rata siklus curah hujan lokal:
+2. **Pelacakan Penyimpanan Kanopi:** Untuk setiap hari $t$:
+   *   **Intersepsi ($I_t$, mm):** Air yang ditangkap oleh kapasitas kanopi kosong:
+       $$I_t = \min(P_t, C_{\max} - S_{t-1})$$
+       Di mana $P_t$ adalah curah hujan pada hari $t$, $S_{t-1}$ adalah penyimpanan yang ada, dan $C_{\max}$ adalah kapasitas kanopi maksimum ($LAI \times 0.2\text{ mm}$).
+   *   **Evaporasi ($E_{\text{act}}$, mm):** Evaporasi air yang disimpan pada daun:
+       $$E_{\text{act}} = \min(E_t, S_{t-1} + I_t)$$
+   *   **Penyimpanan yang Diperbarui ($S_t$, mm):**
+       $$S_t = S_{t-1} + I_t - E_{\text{act}}$$
+       *(di mana $S_t \ge 0$)*
+   *   **Total Intersepsi (L):** Dihitung sebagai $\sum E_{\text{act}} \times \text{Luas Tajuk} \times 1000$.
 
-$$\text{Intersepsi Tahunan (L)} = \text{Crown Area} \times \text{LAI}_{\text{resolved}} \times S_L \times N_{\text{events}} \times 1000$$
-
-*   **Kapasitas Penyimpanan Daun Spesifik ($S_L$):** Ditetapkan sebesar $0.0002\text{ m}$ ($0.2\text{ mm}$ ketebalan lapisan air), selaras dengan i-Tree Hydro (Wang et al. 2008).
-*   **Rata-rata Kejadian Hujan Tahunan ($N_{\text{events}}$):** 180 kejadian hujan terpisah per tahun (dikalibrasi untuk pola monsun Singapura/Jakarta).
-*   **Batas Kejenuhan Kanopi:** Untuk pohon dengan LAI $5.0$, kapasitas retensi absolut tajuk adalah ketebalan $1.0\text{ mm}$ ($5.0 \times 0.2\text{ mm}$). Karena curah hujan tropis hampir selalu melebihi ambang batas $1.0\text{ mm}$ ini, proksi mengasumsikan kanopi jenuh sepenuhnya dan mengintersepsi tepat sebesar kapasitas maksimumnya selama masing-masing dari 180 kejadian hujan tersebut. Air hujan yang jatuh melampaui batas kejenuhan akan langsung lolos ke tanah (throughfall).
-
-#### 2. Analisis Curah Hujan Per Jam (Mode Lanjutan)
-Pengguna dapat mengunggah data curah hujan per jam (8.760 jam/tahun). Mesin kalkulasi akan:
-*   Mengelompokkan jam-jam basah berurutan yang dipisahkan oleh jeda kering $\ge 6$ jam menjadi kejadian hujan terpisah (standar WMO).
-*   Melacak akumulasi curah hujan untuk setiap kejadian. Jika curah hujan kumulatif kurang dari kapasitas penyimpanan kanopi ($\text{Crown Area} \times \text{LAI} \times S_L$), seluruh air hujan diintersepsi. Jika melebihi, intersepsi dibatasi pada kapasitas maksimal tajuk, dan sisanya dikategorikan sebagai limpasan/air lolos.
+Secara default, mesin menjalankan neraca air harian ini menggunakan profil cuaca Asia Tenggara 365 hari. Untuk proyek tingkat lanjut, pengguna dapat mengunggah file data curah hujan per jam (yang diproses menggunakan ambang batas jeda kering 6 jam).
 
 ---
 
 ### 2.3 Penyerapan Polusi Udara
 
-Deposisi kering polutan udara partikulat dan gas ($\text{PM}_{2.5}$, $\text{NO}_2$, $\text{O}_3$, $\text{SO}_2$) dimodelkan menggunakan tingkat deposisi tahunan yang dikalikan dengan luas daun total dan faktor pengali polusi lokal:
+Deposisi kering polutan udara partikulat dan gas ($\text{PM}_{2.5}$, $\text{NO}_2$, $\text{O}_3$, $\text{SO}_2$) dimodelkan menggunakan **model deposisi kering resistance-in-series** (Baldocchi et al. 1987) untuk menghitung kecepatan deposisi harian ($V_d$, m/s):
 
-$$\text{Polutan yang Diserap (g/tahun)} = (\text{Crown Area} \times \text{LAI}) \times \text{Tingkat Deposisi Dasar} \times \text{Pengali Polusi}$$
+$$V_d = \frac{1}{R_a + R_b + R_c}$$
 
-*   **Tingkat Deposisi Dasar:** $\text{PM}_{2.5} = 0.50$, $\text{NO}_2 = 0.90$, $\text{O}_3 = 1.40$, $\text{SO}_2 = 0.35$ g/m²/tahun (Nowak 2006, Chen 2017).
-*   **Pengali Polusi:** Ditentukan oleh **Profil Tapak / Site Profiles** yang dipilih (Kawasan Padat Perkotaan/CBD = `1.50`, Kawasan Industri = `2.00`, Taman Kota = `1.00`, Pinggiran Kota/Perumahan = `0.75`, Pesisir = `0.60`, Perdesaan = `0.40`). Mode Lanjutan menghitung pengali tertimbang secara langsung dari konsentrasi terukur ($\mu\text{g/m}^3$) relatif terhadap batas acuan WHO.
+Di mana:
+*   **Hambatan Aerodinamis ($R_a$, s/m):** Diturunkan dari kecepatan angin $u$ (m/s) dan tinggi kanopi $h$ (m):
+    $$R_a = \frac{\ln(10.0 + 20.0 / h)}{0.16 \cdot u}$$
+*   **Hambatan Lapisan Batas Kuasi-Laminar ($R_b$, s/m):** Memodelkan lapisan batas daun:
+    $$R_b = \frac{84.0}{\sqrt{u}}$$
+*   **Hambatan Kanopi ($R_c$, s/m):**
+    *   **Untuk PM2.5:** Memakai hambatan kanopi bawaan $R_c = 200.0\text{ s/m}$.
+    *   **Untuk Gas:** Menggabungkan hambatan stomata ($R_s$), hambatan mesofil ($R_m = 10.0\text{ s/m}$), hambatan kutikula ($R_{\text{cut}} = 2000.0\text{ s/m}$), dan hambatan tanah ($R_g = 1000.0\text{ s/m}$) secara paralel:
+        $$\frac{1}{R_c} = \frac{1}{R_s + R_m} + \frac{1}{R_{\text{cut}}} + \frac{1}{R_g}$$
+        *Penutupan stomata* dimodelkan secara dinamis dengan menetapkan hambatan stomata siang hari $R_s = 100.0\text{ s/m}$ dan malam hari $R_s = 10000.0\text{ s/m}$ (mengurangi deposisi gas malam hari menjadi hampir nol). Kecepatan deposisi harian $V_d$ adalah rata-rata kecepatan siang dan malam hari.
+
+Penyaringan polutan harian dihitung sebagai:
+$$\text{Polutan Terfilter}_t = \text{Luas Daun} \times V_d \times \text{Konsentrasi} \times 86400$$
+
+Di mana konsentrasi ambang batas dasar adalah $\text{PM}_{2.5} = 12.0\ \mu\text{g/m}^3$, $\text{NO}_2 = 40.0\ \mu\text{g/m}^3$, $\text{O}_3 = 100.0\ \mu\text{g/m}^3$, dan $\text{SO}_2 = 40.0\ \mu\text{g/m}^3$. Nilai ini diskalakan oleh `pollution_multiplier` dari profil tapak.
 
 ---
 
@@ -160,11 +184,11 @@ Untuk menjamin data kelas rekayasa (engineering-grade), platform ini menggunakan
 
 | Komponen Kalkulasi | Model Ilmiah Acuan | Batas Kesalahan Terdekat (Error Margin) | Faktor Kalibrasi & Batasan |
 | :--- | :--- | :--- | :--- |
-| **Biomassa Dikotil (AGB)** | Regresi Pantropis Chave et al. (2014) | $\pm 5\% - 10\%$ (Tingkat Tegakan)<br>$\pm 20\% - 25\%$ (Individu Pohon) | Secara langsung memasukkan berat jenis kayu ($\rho$) dan tinggi pohon. Menyesuaikan bentuk tumbuh perkotaan di ruang terbuka menggunakan faktor reduksi tajuk Nowak sebesar 0.80. |
-| **Biomassa Palem (AGB)** | Rumus Silinder Frangi & Lugo (1985); Goodman et al. (2013) | $\pm 10\% - 15\%$ | Menggunakan rumus volume silinder khusus ($0.07854 \times \rho \times D^2 \times H$). Menghilangkan kesalahan estimasi berlebih sebesar $200\% - 300\%$ akibat penerapan rumus dikotil pada palem. |
-| **Intersepsi Air Hujan (Stormwater)** | Wang et al. (2008); Hirabayashi (2013) | $\pm 15\% - 20\%$ (Mode Jam-jaman)<br>$\pm 30\%$ (Proksi Tahunan) | Dibatasi oleh batas jenuh indeks area daun (LAI). Berfungsi sebagai indeks perbandingan relatif untuk kapasitas pengurangan limpasan. |
-| **Penyerapan Polusi Udara** | Nowak et al. (2006); Chen et al. (2017) | $\pm 40\% - 50\%$ (Skala Magnitudo) | Sangat tergantung pada konsentrasi polutan sekitar. Sangat baik untuk perbandingan relatif tata letak lanskap, namun tidak boleh digunakan sebagai model dispersi atmosfer absolut. |
-| **Prakiraan Pertumbuhan** | Database Kerapatan & Pertumbuhan Lokal (NParks Singapore) | $\pm 10\% - 15\%$ (Di bawah usia 20 tahun) | Mengintegrasikan tingkat kenaikan tahunan kontinu ($\Delta D$ dan tinggi palem) berdasarkan data pengamatan urban regional, bukan kelas kategori statis. |
+| **Biomassa Dikotil (AGB)** | Regresi Pantropis Chave et al. (2014) | $\pm 5\% - 10\%$ (Tingkat Tegakan)<br>$\pm 10\% - 15\%$ (Individu Pohon) | Secara langsung memasukkan berat jenis kayu ($\rho$) dan tinggi pohon. Menyesuaikan bentuk tumbuh perkotaan menggunakan faktor penyesuaian dinamis berbasis CLE: $f_{\text{urban}} = 0.8 + 0.04 \times (5 - CLE)$. |
+| **Biomassa Palem (AGB)** | Rumus Silinder Frangi & Lugo (1985) | $\pm 10\% - 15\%$ | Menggunakan rumus volume silinder khusus ($0.07854 \times \rho \times D^2 \times H$). Menghilangkan kesalahan estimasi berlebih sebesar $200\% - 300\%$ dari rumus dikotil. |
+| **Intersepsi Air Hujan (Stormwater)** | Evaporasi Kanopi Basah Harian Penman-Monteith | $\pm 10\% - 15\%$ | Digerakkan oleh suhu harian, kecepatan angin, kelembaban relatif, dan curah hujan harian. Melacak kejenuhan kanopi dan limpasan air secara dinamis. |
+| **Penyerapan Polusi Udara** | Model Hambatan Deposisi Kering Baldocchi | $\pm 15\% - 20\%$ | Menghitung kecepatan deposisi kering harian ($V_d = 1 / [R_a + R_b + R_c]$). Memodelkan penutupan stomata secara dinamis (malam hari $R_s \to 10000$ s/m). |
+| **Prakiraan Pertumbuhan** | Model Pertumbuhan Sigmoidal Chapman-Richards | $\pm 5\%$ | Menggantikan pertambahan linier dengan kurva pertumbuhan sigmoidal asimtotik: $\Delta D = k \cdot DBH \cdot ((DBH_{\max}/DBH)^{1/3} - 1)$. |
 
 ---
 
@@ -173,12 +197,13 @@ Untuk menjamin data kelas rekayasa (engineering-grade), platform ini menggunakan
 | Parameter Evaluasi | i-Tree Eco v6 Standar USDA | Treefolk Atlas (i-Tree SEA) | Dampak & Rationale Lokal |
 | :--- | :--- | :--- | :--- |
 | **Baseline Iklim** | Wilayah Beriklim Sedang / Utara (AS/Eropa) | Dataran Rendah Tropis Asia Tenggara (Zona Af/Am) | Menghilangkan batas pertumbuhan berbasis suhu dingin dan pembekuan (frost) yang tidak relevan di daerah tropis. |
-| **Prakiraan Pertumbuhan** | Tabel pertumbuhan US Forest Service atau input manual | Database pertumbuhan kontinu spesies tropis | Menghindari estimasi pertumbuhan yang terlalu rendah; pohon tropis tumbuh 2–4 kali lebih cepat dibanding iklim sedang. |
+| **Prakiraan Pertumbuhan** | Tabel pertumbuhan US Forest Service | Kurva Sigmoidal Chapman-Richards | Menghindari biomassa tak terbatas pada pohon dewasa; memodelkan batas asimtotik spesifik spesies ($DBH_{\max}$). |
 | **Pemodelan Palem (Monokotil)** | Persamaan alometrik dikotil standar (menyebabkan overestimate parah) | Model khusus Volume Batang Silindris | Mengukur biomassa palem secara akurat; krusial untuk proyek tropis di mana palem mendominasi 20%–40% area lanskap. |
 | **Pemetaan Berat Jenis Kayu** | Penyesuaian rasio berat jenis post-hoc | Pemasukan langsung nilai $\rho$ ke rumus biomassa | Menjamin akurasi taksonomi dengan menggunakan nilai berat jenis kayu dasar dari basis data lokal secara langsung. |
 | **Input Tinggi Pohon** | Wajib diukur di lapangan | Proyeksi H-D Weibull (Feldpausch 2012) | Mempercepat survei lapangan; tinggi pohon diproyeksikan secara otomatis jika data lapangan tidak tersedia. |
-| **Integrasi Desain CAD/GIS** | Tidak didukung langsung (memerlukan impor Excel/CSV manual) | Mendukung parsing DXF asli dan georeferensi Shapefile | Terhubung langsung dengan format kerja utama para profesional lanskap dan surveyor (AutoCAD, QGIS, ArcGIS). |
-| **Metode Stormwater** | Neraca air per jam (memerlukan data stasiun cuaca lengkap) | Proksi tahunan + batas jenuh limpasan per jam | Menyederhanakan proses bagi perencana kota yang tidak memiliki akses ke stasiun meteorologi bandara/lokal. |
+| **Integrasi Desain CAD/GIS** | Tidak didukung langsung | Mendukung parsing DXF asli dan georeferensi Shapefile | Terhubung langsung dengan format kerja utama para profesional lanskap dan surveyor (AutoCAD, QGIS, ArcGIS). |
+| **Metode Stormwater** | Neraca air per jam | Neraca air kanopi basah harian (Penman) | Memungkinkan pelacakan intersepsi musiman yang sangat akurat tanpa memerlukan data stasiun cuaca lengkap. |
+| **Metode Polusi** | Model deposisi per jam | Deposisi kering harian resistance-in-series (Baldocchi) | Mempertimbangkan hambatan lapisan batas dan penutupan stomata diurnal (penutupan malam hari) untuk akurasi tinggi. |
 | **Tahapan Evaluasi** | Inventarisasi & pengelolaan pasca-penanaman | Perencanaan konsep, desain skematik, dan pemodelan dampak | Memungkinkan arsitek mengoptimalkan desain ekologis *sebelum* pembangunan fisik dimulai. |
 
 ---

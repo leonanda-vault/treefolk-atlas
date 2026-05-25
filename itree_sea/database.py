@@ -38,6 +38,8 @@ from itree_sea.config import (
     DEFAULT_PALM_HEIGHT_GROWTH_M,
     DEFAULT_CROWN_MODIFIER,
     DEFAULT_SPECIES_LAI,
+    DEFAULT_DBH_MAX,
+    DEFAULT_GROWTH_K,
 )
 
 logger = logging.getLogger(__name__)
@@ -64,6 +66,8 @@ class SpeciesRecord:
     palm_height_growth_m: float = 0.0
     crown_modifier: float = 0.15
     species_lai: float = 5.0
+    dbh_max: float = 120.0
+    growth_k: float = 0.05
 
 
 @dataclass
@@ -88,6 +92,8 @@ class AllometricCoefficients:
     palm_height_growth_m: float = 0.0
     crown_modifier: float = 0.15
     species_lai: float = 5.0
+    dbh_max: float = 120.0
+    growth_k: float = 0.05
     species: Optional[str] = None
 
 
@@ -111,7 +117,9 @@ CREATE TABLE IF NOT EXISTS species_lookup (
     true_growth_rate_cm REAL DEFAULT 0.90,
     palm_height_growth_m REAL DEFAULT 0.0,
     crown_modifier  REAL DEFAULT 0.15,
-    species_lai     REAL DEFAULT 5.0
+    species_lai     REAL DEFAULT 5.0,
+    dbh_max         REAL DEFAULT 120.0,
+    growth_k        REAL DEFAULT 0.05
 );
 """
 
@@ -134,6 +142,8 @@ CREATE TABLE IF NOT EXISTS allometric_coefficients (
     palm_height_growth_m REAL DEFAULT 0.0,
     crown_modifier  REAL DEFAULT 0.15,
     species_lai     REAL DEFAULT 5.0,
+    dbh_max         REAL DEFAULT 120.0,
+    growth_k        REAL DEFAULT 0.05,
     UNIQUE(genus, species)
 );
 """
@@ -231,6 +241,8 @@ def seed_from_csv(
                 palm_h_growth = float(row["palm_height_growth_m"]) if row.get("palm_height_growth_m") else DEFAULT_PALM_HEIGHT_GROWTH_M
                 cr_mod = float(row["crown_modifier"]) if row.get("crown_modifier") else DEFAULT_CROWN_MODIFIER
                 sp_lai = float(row["species_lai"]) if row.get("species_lai") else DEFAULT_SPECIES_LAI
+                dbh_max_val = float(row["dbh_max"]) if row.get("dbh_max") else DEFAULT_DBH_MAX
+                growth_k_val = float(row["growth_k"]) if row.get("growth_k") else DEFAULT_GROWTH_K
 
                 # ── Insert into species_lookup ──
                 cur.execute(
@@ -238,8 +250,9 @@ def seed_from_csv(
                     INSERT OR IGNORE INTO species_lookup
                         (nparks_code, common_name, scientific_name, genus,
                          family, growth_rate, is_palm, native_region, notes,
-                         true_growth_rate_cm, palm_height_growth_m, crown_modifier, species_lai)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                         true_growth_rate_cm, palm_height_growth_m, crown_modifier, species_lai,
+                         dbh_max, growth_k)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     """,
                     (
                         row.get("nparks_code", "").strip() or None,
@@ -255,6 +268,8 @@ def seed_from_csv(
                         palm_h_growth,
                         cr_mod,
                         sp_lai,
+                        dbh_max_val,
+                        growth_k_val,
                     ),
                 )
 
@@ -268,8 +283,9 @@ def seed_from_csv(
                         (genus, species, equation_form, a, b, c,
                          wood_density, height_model_form,
                          height_model_a, height_model_b, height_model_c, source,
-                         true_growth_rate_cm, palm_height_growth_m, crown_modifier, species_lai)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                         true_growth_rate_cm, palm_height_growth_m, crown_modifier, species_lai,
+                         dbh_max, growth_k)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     """,
                     (
                         genus_name,
@@ -288,6 +304,8 @@ def seed_from_csv(
                         palm_h_growth,
                         cr_mod,
                         sp_lai,
+                        dbh_max_val,
+                        growth_k_val,
                     ),
                 )
 
@@ -374,6 +392,8 @@ def lookup_species(
             palm_height_growth_m=row["palm_height_growth_m"] if "palm_height_growth_m" in row.keys() else DEFAULT_PALM_HEIGHT_GROWTH_M,
             crown_modifier=row["crown_modifier"] if "crown_modifier" in row.keys() else DEFAULT_CROWN_MODIFIER,
             species_lai=row["species_lai"] if "species_lai" in row.keys() else DEFAULT_SPECIES_LAI,
+            dbh_max=row["dbh_max"] if "dbh_max" in row.keys() else DEFAULT_DBH_MAX,
+            growth_k=row["growth_k"] if "growth_k" in row.keys() else DEFAULT_GROWTH_K,
         )
 
     finally:
@@ -503,7 +523,9 @@ def _resolve_genus_averages(conn: sqlite3.Connection, genus_name: str) -> Dict[s
                 AVG(true_growth_rate_cm) as avg_growth,
                 AVG(palm_height_growth_m) as avg_palm_h,
                 AVG(crown_modifier) as avg_crown,
-                AVG(species_lai) as avg_lai
+                AVG(species_lai) as avg_lai,
+                AVG(dbh_max) as avg_dbh_max,
+                AVG(growth_k) as avg_growth_k
             FROM allometric_coefficients
             WHERE LOWER(genus) = LOWER(?) AND species IS NOT NULL
             """,
@@ -516,6 +538,8 @@ def _resolve_genus_averages(conn: sqlite3.Connection, genus_name: str) -> Dict[s
             averages["palm_height_growth_m"] = row[2]
             averages["crown_modifier"] = row[3]
             averages["species_lai"] = row[4]
+            averages["dbh_max"] = row[5]
+            averages["growth_k"] = row[6]
     except Exception as e:
         logger.error("Error calculating genus averages for genus %s: %s", genus_name, e)
     return averages
@@ -531,11 +555,13 @@ def _row_to_coefficients(
     palm_h_growth = row["palm_height_growth_m"] if "palm_height_growth_m" in row.keys() else None
     cr_mod = row["crown_modifier"] if "crown_modifier" in row.keys() else None
     sp_lai = row["species_lai"] if "species_lai" in row.keys() else None
+    dbh_max_val = row["dbh_max"] if "dbh_max" in row.keys() else None
+    growth_k_val = row["growth_k"] if "growth_k" in row.keys() else None
 
     genus = row["genus"] if "genus" in row.keys() else None
 
     # Taxonomic Genus fallback: if species-level fields are None or 0.0, average over genus
-    if genus and conn and (true_growth is None or true_growth == 0.0 or cr_mod is None or cr_mod == 0.0 or sp_lai is None or sp_lai == 0.0):
+    if genus and conn and (true_growth is None or true_growth == 0.0 or cr_mod is None or cr_mod == 0.0 or sp_lai is None or sp_lai == 0.0 or dbh_max_val is None or dbh_max_val == 0.0 or growth_k_val is None or growth_k_val == 0.0):
         averages = _resolve_genus_averages(conn, genus)
         if true_growth is None or true_growth == 0.0:
             true_growth = averages.get("true_growth_rate_cm")
@@ -545,6 +571,10 @@ def _row_to_coefficients(
             cr_mod = averages.get("crown_modifier")
         if sp_lai is None or sp_lai == 0.0:
             sp_lai = averages.get("species_lai")
+        if dbh_max_val is None or dbh_max_val == 0.0:
+            dbh_max_val = averages.get("dbh_max")
+        if growth_k_val is None or growth_k_val == 0.0:
+            growth_k_val = averages.get("growth_k")
 
     # Final config defaults fallbacks
     if true_growth is None or true_growth == 0.0:
@@ -555,6 +585,10 @@ def _row_to_coefficients(
         cr_mod = DEFAULT_CROWN_MODIFIER
     if sp_lai is None or sp_lai == 0.0:
         sp_lai = DEFAULT_SPECIES_LAI
+    if dbh_max_val is None or dbh_max_val == 0.0:
+        dbh_max_val = DEFAULT_DBH_MAX
+    if growth_k_val is None or growth_k_val == 0.0:
+        growth_k_val = DEFAULT_GROWTH_K
 
     return AllometricCoefficients(
         wood_density=row["wood_density"],
@@ -572,6 +606,8 @@ def _row_to_coefficients(
         palm_height_growth_m=palm_h_growth,
         crown_modifier=cr_mod,
         species_lai=sp_lai,
+        dbh_max=dbh_max_val,
+        growth_k=growth_k_val,
         species=row["species"] if "species" in row.keys() else None,
     )
 
@@ -594,6 +630,8 @@ def _default_coefficients() -> AllometricCoefficients:
         palm_height_growth_m=DEFAULT_PALM_HEIGHT_GROWTH_M,
         crown_modifier=DEFAULT_CROWN_MODIFIER,
         species_lai=DEFAULT_SPECIES_LAI,
+        dbh_max=DEFAULT_DBH_MAX,
+        growth_k=DEFAULT_GROWTH_K,
         species=None,
     )
 

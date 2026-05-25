@@ -1,90 +1,90 @@
-nparks_code,common_name,scientific_name,genus,family,growth_rate,is_palm,native_region,notes,wood_density,equation_form,a,b,c,height_model_a,height_model_b,source,true_growth_rate_cm,palm_height_growth_m,crown_modifier,species_lai
-PTCR,Angsana,Pterocarpus indicus,Pterocarpus,Fabaceae,moderate,0,singapore,Heritage tree; termite-resistant hardwood,0.536,chave_2014,0.0673,0.976,,0.893,0.76,Chave 2014; ICRAF WD;; GWDD v2.2,1.1,0.0,0.28,4.5
-SWMT,Mahogany,Swietenia macrophylla,Swietenia,Meliaceae,moderate,0,indonesia,Common street tree; plantation timber,0.482,chave_2014,0.0673,0.976,,0.893,0.76,Chave 2014; ICRAF WD;; GWDD v2.2,1.0,0.0,0.15,4.5
-DLNX,Royal Poinciana,Delonix regia,Delonix,Fabaceae,fast,0,pantropical,Flame tree; spectacular orange flowers,0.423,chave_2014,0.0673,0.976,,0.893,0.76,Chave 2014; ICRAF WD;; GWDD v2.2,1.6,0.0,0.3,3.5
-TMLA,Tanjong,Mimusops elengi,Mimusops,Sapotaceae,slow,0,singapore,Dense hardwood; fragrant flowers,0.801,chave_2014,0.0673,0.976,,0.893,0.76,Chave 2014; ICRAF WD;; GWDD v2.2,0.5,0.0,0.15,5.5
-FCBN,Weeping Fig,Ficus benjamina,Ficus,Moraceae,fast,0,singapore,Common urban tree; aerial roots,0.514,chave_2014,0.0673,0.976,,0.893,0.76,Chave 2014; ICRAF WD;; GWDD v2.2,1.5,0.0,0.18,5.5
-SAQF,Sea Apple,Syzygium grande,Syzygium,Myrtaceae,moderate,0,singapore,Native coastal; mass white flowering,0.633,chave_2014,0.0673,0.976,,0.893,0.76,Chave 2014; ICRAF WD;; GWDD v2.2,0.9,0.0,0.15,5.5
-TRCT,Tembusu,Cyrtophyllum fragrans,Cyrtophyllum,Gentianaceae,slow,0,singapore,National icon; on $5 note,0.695,chave_2014,0.0673,0.976,,0.893,0.76,Chave 2014; ICRAF WD;; GWDD v2.2,0.4,0.0,0.15,5.0
-TRGD,Teak,Tectona grandis,Tectona,Lamiaceae,moderate,0,indonesia,Premium plantation timber,0.567,chave_2014,0.0673,0.976,,0.893,0.76,Chave 2014; ICRAF WD;;; GWDD v2.2,0.9,0.0,0.15,5.0
-FLML,Batai,Falcataria moluccana,Falcataria,Fabaceae,fast,0,indonesia,Fast pioneer; soft wood,0.28,chave_2014,0.0673,0.976,,0.893,0.76,Chave 2014; ICRAF WD;,1.5,0.0,0.15,5.0
-TRGL,Ketapang,Terminalia catappa,Terminalia,Combretaceae,moderate,0,pantropical,Coastal shade; pagoda crown,0.472,chave_2014,0.0673,0.976,,0.893,0.76,Chave 2014; ICRAF WD;; GWDD v2.2,0.9,0.0,0.15,5.0
-PLMR,Yellow Palm,Dypsis lutescens,Dypsis,Arecaceae,moderate,1,pantropical,Ornamental clumping palm,0.4,chave_2014,0.0673,0.976,,0.893,0.76,Chave 2014 (palm 0.41);;;,0.0,0.3,0.08,2.5
-CNCF,Coconut Palm,Cocos nucifera,Cocos,Arecaceae,moderate,1,pantropical,Ubiquitous tropical palm,0.537,chave_2014,0.0673,0.976,,0.893,0.76,Chave 2014 (palm 0.41);;;; GWDD v2.2,0.0,0.3,0.08,2.5
-RYST,Oil Palm,Elaeis guineensis,Elaeis,Arecaceae,fast,1,indonesia,Major crop palm,0.51,chave_2014,0.0673,0.976,,0.893,0.76,Chave 2014 (palm 0.41);;;; GWDD v2.2,0.0,0.6,0.08,2.5
-SPTD,African Tulip,Spathodea campanulata,Spathodea,Bignoniaceae,fast,0,pantropical,Invasive in some areas; orange flowers,0.335,chave_2014,0.0673,0.976,,0.893,0.76,Chave 2014; ICRAF WD;; GWDD v2.2,1.5,0.0,0.15,5.0
-PLTA,Travellers Palm,Ravenala madagascariensis,Ravenala,Strelitziaceae,fast,1,pantropical,Fan-shaped; palm-like monocot,0.12,chave_2014,0.0673,0.976,,0.893,0.76,Chave 2014 (palm 0.41);;; GWDD v2.2,0.0,0.6,0.08,2.5
-CSFL,Golden Shower,Cassia fistula,Cassia,Fabaceae,moderate,0,pantropical,Yellow pendulous flowers,0.72,chave_2014,0.0673,0.976,,0.893,0.76,Chave 2014; ICRAF WD;;; GWDD v2.2,0.9,0.0,0.15,5.0
-TBBA,Pink Trumpet,Tabebuia rosea,Tabebuia,Bignoniaceae,moderate,0,pantropical,Cherry blossom of tropics,0.515,chave_2014,0.0673,0.976,,0.893,0.76,Chave 2014; ICRAF WD;;; GWDD v2.2,0.9,0.0,0.15,5.0
-PLTS,Saga,Adenanthera pavonina,Adenanthera,Fabaceae,moderate,0,singapore,Red bead tree; nitrogen fixer,0.607,chave_2014,0.0673,0.976,,0.893,0.76,Chave 2014; ICRAF WD;; GWDD v2.2,0.9,0.0,0.15,5.0
-SMNR,Rain Tree,Samanea saman,Samanea,Fabaceae,fast,0,singapore,Heritage species; massive canopy,0.537,chave_2014,0.0673,0.976,,0.893,0.76,Chave 2014; ICRAF WD;; GWDD v2.2,1.75,0.0,0.3,6.0
-CNLM,Wild Cinnamon,Cinnamomum iners,Cinnamomum,Lauraceae,slow,0,singapore,Aromatic native,0.496,chave_2014,0.0673,0.976,,0.893,0.76,Chave 2014; ICRAF WD;;; GWDD v2.2,0.4,0.0,0.15,5.0
-PLPT,Yellow Flame,Peltophorum pterocarpum,Peltophorum,Fabaceae,moderate,0,singapore,Robust street tree; yellow flowers,0.592,chave_2014,0.0673,0.976,,0.893,0.76,Chave 2014; ICRAF WD;; GWDD v2.2,0.9,0.0,0.15,5.0
-LGSP,Queen Crepe Myrtle,Lagerstroemia speciosa,Lagerstroemia,Lythraceae,moderate,0,singapore,Bungor; pink-purple flowers,0.547,chave_2014,0.0673,0.976,,0.893,0.76,Chave 2014; ICRAF WD;; GWDD v2.2,0.9,0.0,0.15,5.0
-ALSC,Pulai,Alstonia scholaris,Alstonia,Apocynaceae,fast,0,indonesia,Blackboard tree; medicinal,0.374,chave_2014,0.0673,0.976,,0.893,0.76,Chave 2014; ICRAF WD;; GWDD v2.2,1.5,0.0,0.15,5.0
-ALAN,Pulai Daun Sempit,Alstonia angustifolia,Alstonia,Apocynaceae,fast,0,malaysia,Narrow-leaved pulai,0.603,chave_2014,0.0673,0.976,,0.893,0.76,Chave 2014; ICRAF WD;;; GWDD v2.2,1.5,0.0,0.15,5.0
-FCAL,Bodhi Tree,Ficus religiosa,Ficus,Moraceae,fast,0,pantropical,Sacred fig; heart-shaped leaves,0.445,chave_2014,0.0673,0.976,,0.893,0.76,Chave 2014; ICRAF WD;; GWDD v2.2,1.5,0.0,0.15,5.5
-FCMS,Rubber Tree,Ficus elastica,Ficus,Moraceae,fast,0,singapore,Indian rubber fig; large leaves,0.517,chave_2014,0.0673,0.976,,0.893,0.76,Chave 2014; ICRAF WD;; GWDD v2.2,1.5,0.0,0.15,5.5
-FCVR,White Fig,Ficus virens,Ficus,Moraceae,fast,0,singapore,Deciduous fig; pillar roots,0.44,chave_2014,0.0673,0.976,,0.893,0.76,Chave 2014; ICRAF WD;; GWDD v2.2,1.5,0.0,0.15,5.5
-FCMC,Chinese Banyan,Ficus microcarpa,Ficus,Moraceae,fast,0,singapore,Common park tree; aerial roots,0.523,chave_2014,0.0673,0.976,,0.893,0.76,Chave 2014; ICRAF WD;; GWDD v2.2,1.5,0.0,0.15,5.5
-ERVA,Coral Tree,Erythrina variegata,Erythrina,Fabaceae,fast,0,pantropical,Dadap; red flowers; very light wood,0.237,chave_2014,0.0673,0.976,,0.893,0.76,Chave 2014; ICRAF WD; GWDD v2.2,1.5,0.0,0.15,5.0
-CLPH,Bintangor,Calophyllum inophyllum,Calophyllum,Calophyllaceae,moderate,0,singapore,Beach calophyllum; oil seeds,0.543,chave_2014,0.0673,0.976,,0.893,0.76,Chave 2014; ICRAF WD;; GWDD v2.2,0.9,0.0,0.15,5.0
-HPOD,Chengal Pasir,Hopea odorata,Hopea,Dipterocarpaceae,slow,0,vietnam,Premium hardwood; SE Asian native,0.638,chave_2014,0.0673,0.976,,0.893,0.76,Chave 2014; ICRAF WD;; GWDD v2.2,0.4,0.0,0.15,5.0
-KSGN,African Mahogany,Khaya senegalensis,Khaya,Meliaceae,moderate,0,pantropical,Dry-season deciduous; termite resistant,0.648,chave_2014,0.0673,0.976,,0.893,0.76,Chave 2014; ICRAF WD;; GWDD v2.2,0.9,0.0,0.15,5.0
-PLLN,Glodokan,Polyalthia longifolia,Polyalthia,Annonaceae,moderate,0,indonesia,Columnar form; privacy screen,0.56,chave_2014,0.0673,0.976,,0.893,0.76,Chave 2014; ICRAF WD;,0.9,0.0,0.08,4.0
-SCOL,Kesambi,Schleichera oleosa,Schleichera,Sapindaceae,slow,0,indonesia,Ceylon oak; very hard wood,0.806,chave_2014,0.0673,0.976,,0.893,0.76,Chave 2014; ICRAF WD;; GWDD v2.2,0.4,0.0,0.15,5.0
-PLMR2,Frangipani,Plumeria rubra,Plumeria,Apocynaceae,moderate,0,pantropical,Kamboja; temple tree; fragrant flowers,0.514,chave_2014,0.0673,0.976,,0.893,0.76,Chave 2014; ICRAF WD; GWDD v2.2,0.9,0.0,0.15,5.0
-TBPT,Trumpet Tree,Tabebuia pallida,Tabebuia,Bignoniaceae,moderate,0,pantropical,White trumpet flowers,0.495,chave_2014,0.0673,0.976,,0.893,0.76,Chave 2014; ICRAF WD;;; GWDD v2.2,0.9,0.0,0.15,5.0
-SYZP,Jambu Air,Syzygium aqueum,Syzygium,Myrtaceae,moderate,0,indonesia,Water apple; edible fruit,0.55,chave_2014,0.0673,0.976,,0.893,0.76,Chave 2014; ICRAF WD;,0.9,0.0,0.15,5.5
-SYZM,Kelat,Syzygium myrtifolium,Syzygium,Myrtaceae,moderate,0,singapore,Red lip; compact crown; popular hedge tree,0.62,chave_2014,0.0673,0.976,,0.893,0.76,Chave 2014; ICRAF WD,0.9,0.0,0.15,5.5
-FLDC,Fern Tree,Filicium decipiens,Filicium,Sapindaceae,slow,0,singapore,Fern-like leaves; elegant shade tree,0.692,chave_2014,0.0673,0.976,,0.893,0.76,Chave 2014; ICRAF WD;; GWDD v2.2,0.4,0.0,0.15,5.0
-MSNF,Breadfruit,Artocarpus altilis,Artocarpus,Moraceae,fast,0,pantropical,Sukun; large lobed leaves,0.343,chave_2014,0.0673,0.976,,0.893,0.76,Chave 2014; ICRAF WD;; GWDD v2.2,1.5,0.0,0.15,5.0
-ARHT,Jackfruit,Artocarpus heterophyllus,Artocarpus,Moraceae,moderate,0,indonesia,Nangka; edible fruit; durable wood,0.465,chave_2014,0.0673,0.976,,0.893,0.76,Chave 2014; ICRAF WD; GWDD v2.2,0.9,0.0,0.15,5.0
-MNGI,Mango,Mangifera indica,Mangifera,Anacardiaceae,moderate,0,indonesia,Widespread fruit tree; large canopy,0.53,chave_2014,0.0673,0.976,,0.893,0.76,Chave 2014; ICRAF WD;; GWDD v2.2,0.9,0.0,0.15,5.0
-GNMN,Gnetum,Gnetum gnemon,Gnetum,Gnetaceae,slow,0,indonesia,Melinjo; emping snack source,0.6,chave_2014,0.0673,0.976,,0.893,0.76,Chave 2014; ICRAF WD;; GWDD v2.2,0.4,0.0,0.15,5.0
-BRGT,Bougainvillea,Bougainvillea spectabilis,Bougainvillea,Nyctaginaceae,fast,0,pantropical,Ornamental; trained as small tree,0.415,chave_2014,0.0673,0.976,,0.893,0.76,Chave 2014; ICRAF WD;; GWDD v2.2,1.5,0.0,0.15,5.0
-ACMG,Acacia Mangium,Acacia mangium,Acacia,Fabaceae,fast,0,indonesia,Fast-growing plantation; nitrogen fixer,0.469,chave_2014,0.0673,0.976,,0.893,0.76,Chave 2014; ICRAF WD;; GWDD v2.2,1.5,0.0,0.15,5.0
-ACAU,Acacia Auriculiformis,Acacia auriculiformis,Acacia,Fabaceae,fast,0,indonesia,Ear-pod wattle; erosion control,0.629,chave_2014,0.0673,0.976,,0.893,0.76,Chave 2014; ICRAF WD;; GWDD v2.2,1.5,0.0,0.15,5.0
-LCCN,Longan,Dimocarpus longan,Dimocarpus,Sapindaceae,moderate,0,thailand,Kelengkeng; fruit tree; dense canopy,0.813,chave_2014,0.0673,0.976,,0.893,0.76,Chave 2014; ICRAF WD; GWDD v2.2,0.9,0.0,0.15,5.0
-DRZB,Durian,Durio zibethinus,Durio,Malvaceae,slow,0,indonesia,King of fruits; tall canopy tree,0.487,chave_2014,0.0673,0.976,,0.893,0.76,Chave 2014; ICRAF WD;; GWDD v2.2,0.4,0.0,0.15,5.0
-GNRB,Rambutan,Nephelium lappaceum,Nephelium,Sapindaceae,moderate,0,indonesia,Hairy lychee; popular fruit tree,0.712,chave_2014,0.0673,0.976,,0.893,0.76,Chave 2014; ICRAF WD;; GWDD v2.2,0.9,0.0,0.15,5.0
-CRPT,Kayu Manis,Cinnamomum burmannii,Cinnamomum,Lauraceae,moderate,0,indonesia,Indonesian cinnamon; spice tree,0.46,chave_2014,0.0673,0.976,,0.893,0.76,Chave 2014; ICRAF WD;,0.9,0.0,0.15,5.0
-MLIA,Mindi,Melia azedarach,Melia,Meliaceae,fast,0,pantropical,Chinaberry; fast shade; pest resistant,0.43,chave_2014,0.0673,0.976,,0.893,0.76,Chave 2014; ICRAF WD; GWDD v2.2,1.5,0.0,0.15,5.0
-CLST,Satin Leaf,Chrysophyllum cainito,Chrysophyllum,Sapotaceae,moderate,0,pantropical,Star apple; ornamental shade,0.736,chave_2014,0.0673,0.976,,0.893,0.76,Chave 2014; ICRAF WD;; GWDD v2.2,0.9,0.0,0.15,5.0
-MNCF,Norfolk Pine,Araucaria heterophylla,Araucaria,Araucariaceae,slow,0,pantropical,Cemara; conical form; coastal,0.45,chave_2014,0.0673,0.976,,0.893,0.76,Chave 2014; ICRAF WD,0.4,0.0,0.15,5.0
-CSSM,Senna,Senna siamea,Senna,Fabaceae,fast,0,thailand,Johar; fast street tree; yellow flowers,0.673,chave_2014,0.0673,0.976,,0.893,0.76,Chave 2014; ICRAF WD; GWDD v2.2,1.5,0.0,0.15,5.0
-TRMD,Trema,Trema orientalis,Trema,Cannabaceae,fast,0,pantropical,Pioneer; rapid regreening,0.351,chave_2014,0.0673,0.976,,0.893,0.76,Chave 2014; ICRAF WD;; GWDD v2.2,1.5,0.0,0.15,5.0
-CBSG,Bunga Kupu-kupu,Bauhinia purpurea,Bauhinia,Fabaceae,moderate,0,pantropical,Orchid tree; butterfly flowers,0.444,chave_2014,0.0673,0.976,,0.893,0.76,Chave 2014; ICRAF WD;; GWDD v2.2,0.9,0.0,0.15,5.0
-MRKP,Markhamia,Markhamia lutea,Markhamia,Bignoniaceae,moderate,0,pantropical,Yellow trumpet; African origin,0.472,chave_2014,0.0673,0.976,,0.893,0.76,Chave 2014; ICRAF WD;; GWDD v2.2,0.9,0.0,0.15,5.0
-TNDR,Tanjung,Brunfelsia pauciflora,Brunfelsia,Solanaceae,moderate,0,pantropical,Yesterday-today-tomorrow; ornamental,0.42,chave_2014,0.0673,0.976,,0.893,0.76,Chave 2014; ICRAF WD;,0.9,0.0,0.15,5.0
-RYSN,Royal Palm,Roystonea regia,Roystonea,Arecaceae,moderate,1,pantropical,Palem raja; stately avenue palm,0.52,chave_2014,0.0673,0.976,,0.893,0.76,Chave 2014 (palm 0.41);;; GWDD v2.2,0.0,0.3,0.08,2.5
-ARNG,Pinang,Areca catechu,Areca,Arecaceae,moderate,1,indonesia,Betel nut palm; slender trunk,0.56,chave_2014,0.0673,0.976,,0.893,0.76,Chave 2014 (palm 0.41);;; GWDD v2.2,0.0,0.3,0.08,2.5
-LVSN,Fan Palm,Livistona chinensis,Livistona,Arecaceae,slow,1,singapore,Chinese fan palm; park feature,0.165,chave_2014,0.0673,0.976,,0.893,0.76,Chave 2014 (palm 0.41);;; GWDD v2.2,0.0,0.15,0.08,2.5
-PTCR2,Foxtail Palm,Wodyetia bifurcata,Wodyetia,Arecaceae,moderate,1,pantropical,Bushy foxtail fronds; ornamental,0.42,chave_2014,0.0673,0.976,,0.893,0.76,Chave 2014 (palm 0.41);;,0.0,0.3,0.08,2.5
-LCLC,Lamtoro,Leucaena leucocephala,Leucaena,Fabaceae,fast,0,pantropical,Nitrogen fixer; fast pioneer,0.636,chave_2014,0.0673,0.976,,0.893,0.76,Chave 2014; ICRAF WD;; GWDD v2.2,1.5,0.0,0.15,5.0
-DLID,Asam Kranji,Dialium indum,Dialium,Fabaceae,slow,0,indonesia,Hard native; kranji fruit,0.818,chave_2014,0.0673,0.976,,0.893,0.76,Chave 2014; ICRAF WD;; GWDD v2.2,0.4,0.0,0.15,5.0
-ALML,Kemiri,Aleurites moluccanus,Aleurites,Euphorbiaceae,moderate,0,indonesia,Candlenut; oil seeds,0.348,chave_2014,0.0673,0.976,,0.893,0.76,Chave 2014; ICRAF WD;; GWDD v2.2,0.9,0.0,0.15,5.0
-ECDG,Leda,Eucalyptus deglupta,Eucalyptus,Myrtaceae,fast,0,indonesia,Rainbow gum; colorful bark,0.499,chave_2014,0.0673,0.976,,0.893,0.76,Chave 2014; ICRAF WD;; GWDD v2.2,1.5,0.0,0.15,5.0
-CBMG,Bintaro,Cerbera manghas,Cerbera,Apocynaceae,moderate,0,indonesia,Sea mango; coastal ornamental,0.328,chave_2014,0.0673,0.976,,0.893,0.76,Chave 2014; ICRAF WD;; GWDD v2.2,0.9,0.0,0.15,5.0
-MTCL,Kersen,Muntingia calabura,Muntingia,Muntingiaceae,fast,0,pantropical,Cherry tree; fast fruiting,0.3,chave_2014,0.0673,0.976,,0.893,0.76,Chave 2014; ICRAF WD;; GWDD v2.2,1.5,0.0,0.15,5.0
-CBPT,Kapuk,Ceiba pentandra,Ceiba,Malvaceae,fast,0,pantropical,Kapok; very light wood,0.305,chave_2014,0.0673,0.976,,0.893,0.76,Chave 2014; ICRAF WD;; GWDD v2.2,1.5,0.0,0.15,5.0
-TMID,Asam Jawa,Tamarindus indica,Tamarindus,Fabaceae,slow,0,pantropical,Tamarind; hard dense wood,0.779,chave_2014,0.0673,0.976,,0.893,0.76,Chave 2014; ICRAF WD;; GWDD v2.2,0.4,0.0,0.15,5.0
-TRMY,Ketapang Kencana,Terminalia mantaly,Terminalia,Combretaceae,moderate,0,pantropical,Madagascar almond; ornamental,0.647,chave_2014,0.0673,0.976,,0.893,0.76,Chave 2014; ICRAF WD;; GWDD v2.2,0.9,0.0,0.15,5.0
-TBAU,Tabe Kuning,Tabebuia aurea,Tabebuia,Bignoniaceae,moderate,0,pantropical,Yellow trumpet tree,0.65,chave_2014,0.0673,0.976,,0.893,0.76,Chave 2014; ICRAF WD; GWDD v2.2,0.9,0.0,0.15,5.0
-CPSC,Tabe Kuning,Tabebuia chrysantha,Tabebuia,Bignoniaceae,moderate,0,indonesia,Golden trumpet tree,0.8,chave_2014,0.0673,0.976,,0.893,0.76,Chave 2014; ICRAF WD,0.9,0.0,0.15,5.0
-PDMC,Lohansung,Podocarpus macrophyllus,Podocarpus,Podocarpaceae,slow,0,indonesia,Ornamental conifer,0.55,chave_2014,0.0673,0.976,,0.893,0.76,Chave 2014; ICRAF WD; GWDD v2.2,0.4,0.0,0.15,5.0
-PLOB,Balibong,Palaquium obovatum,Palaquium,Sapotaceae,slow,0,indonesia,Ornamental exotic trunk,0.528,chave_2014,0.0673,0.976,,0.893,0.76,Chave 2014; ICRAF WD; GWDD v2.2,0.4,0.0,0.15,5.0
-DDAS,Bambu Petung,Dendrocalamus asper,Dendrocalamus,Poaceae,fast,1,indonesia,Giant bamboo,0.6,chave_2014,0.0673,0.976,,0.893,0.76,Chave 2014; ICRAF WD,0.0,0.6,0.08,2.5
-CSEQ,Cemara Angin,Casuarina equisetifolia,Casuarina,Casuarinaceae,fast,0,indonesia,Coastal conifer,0.827,chave_2014,0.0673,0.976,,0.893,0.76,Chave 2014; ICRAF WD; GWDD v2.2,1.5,0.0,0.12,4.0
-AGDM,Damar,Agathis dammara,Agathis,Araucariaceae,moderate,0,indonesia,Resin-producing conifer,0.494,chave_2014,0.0673,0.976,,0.893,0.76,Chave 2014; ICRAF WD; GWDD v2.2,0.9,0.0,0.15,5.0
-SZJM,Jambu Mawar,Syzygium jambos,Syzygium,Myrtaceae,moderate,0,indonesia,Rose apple,0.624,chave_2014,0.0673,0.976,,0.893,0.76,Chave 2014; ICRAF WD; GWDD v2.2,0.9,0.0,0.15,5.5
-MLCJ,Kayu Putih,Melaleuca cajuputi,Melaleuca,Myrtaceae,moderate,0,indonesia,Cajuput tree,0.75,chave_2014,0.0673,0.976,,0.893,0.76,Chave 2014; ICRAF WD,0.9,0.0,0.15,5.0
-MROL,Kelor Africa,Moringa oleifera,Moringa,Moringaceae,fast,0,indonesia,Drumstick tree,0.265,chave_2014,0.0673,0.976,,0.893,0.76,Chave 2014; ICRAF WD; GWDD v2.2,1.5,0.0,0.15,5.0
-TRMN,Ketapang Mini,Terminalia mantaly,Terminalia,Combretaceae,moderate,0,indonesia,Umbrella tree,0.647,chave_2014,0.0673,0.976,,0.893,0.76,Chave 2014; ICRAF WD; GWDD v2.2,0.9,0.0,0.15,5.0
-SLBB,Liang Liu,Salix babylonica,Salix,Salicaceae,fast,0,indonesia,Weeping willow,0.426,chave_2014,0.0673,0.976,,0.893,0.76,Chave 2014; ICRAF WD; GWDD v2.2,1.5,0.0,0.15,5.0
-SZPR,Pakis Brazil,Schizolobium parahyba,Schizolobium,Fabaceae,fast,0,indonesia,Brazilian firetree,0.386,chave_2014,0.0673,0.976,,0.893,0.76,Chave 2014; ICRAF WD; GWDD v2.2,1.5,0.0,0.15,5.0
-HIMP,Tabebuia Pink,Handroanthus impetiginosus,Handroanthus,Bignoniaceae,moderate,0,indonesia,Pink trumpet tree,0.78,chave_2014,0.0673,0.976,,0.893,0.76,Chave 2014; ICRAF WD;;; GWDD v2.2,0.9,0.0,0.15,5.0
-PLOB2,Kamboja Putih,Plumeria obtusa,Plumeria,Apocynaceae,moderate,0,pantropical,White frangipani; compact ornamental,0.514,chave_2014,0.0673,0.976,,0.893,0.76,Chave 2014; ICRAF WD; GWDD v2.2,0.9,0.0,0.15,5.0
-PNBT,Pandan Bali,Pandanus baptistii,Pandanus,Pandanaceae,moderate,0,indonesia,Ornamental screwpine; variegated leaves,0.42,chave_2014,0.0673,0.976,,0.893,0.76,Chave 2014; ICRAF WD,0.9,0.0,0.15,5.0
-CLVM,Sikat Botol,Callistemon viminalis,Callistemon,Myrtaceae,moderate,0,pantropical,Weeping bottlebrush; red flowers,0.7,chave_2014,0.0673,0.976,,0.893,0.76,Chave 2014; ICRAF WD; GWDD v2.2,0.9,0.0,0.15,5.0
-ADDI,Baobab,Adansonia digitata,Adansonia,Malvaceae,slow,0,pantropical,African baobab; massive trunk water storage,0.3,chave_2014,0.0673,0.976,,0.893,0.76,Chave 2014; ICRAF WD; GWDD v2.2,0.4,0.0,0.15,5.0
+nparks_code,common_name,scientific_name,genus,family,growth_rate,is_palm,native_region,notes,wood_density,equation_form,a,b,c,height_model_a,height_model_b,source,true_growth_rate_cm,palm_height_growth_m,crown_modifier,species_lai,dbh_max,growth_k
+PTCR,Angsana,Pterocarpus indicus,Pterocarpus,Fabaceae,moderate,0,singapore,Heritage tree; termite-resistant hardwood,0.536,chave_2014,0.0673,0.976,,0.893,0.76,Chave 2014; ICRAF WD;; GWDD v2.2,1.1,0.0,0.28,4.5,180.0,0.05
+SWMT,Mahogany,Swietenia macrophylla,Swietenia,Meliaceae,moderate,0,indonesia,Common street tree; plantation timber,0.482,chave_2014,0.0673,0.976,,0.893,0.76,Chave 2014; ICRAF WD;; GWDD v2.2,1.0,0.0,0.15,4.5,180.0,0.05
+DLNX,Royal Poinciana,Delonix regia,Delonix,Fabaceae,fast,0,pantropical,Flame tree; spectacular orange flowers,0.423,chave_2014,0.0673,0.976,,0.893,0.76,Chave 2014; ICRAF WD;; GWDD v2.2,1.6,0.0,0.3,3.5,120.0,0.08
+TMLA,Tanjong,Mimusops elengi,Mimusops,Sapotaceae,slow,0,singapore,Dense hardwood; fragrant flowers,0.801,chave_2014,0.0673,0.976,,0.893,0.76,Chave 2014; ICRAF WD;; GWDD v2.2,0.5,0.0,0.15,5.5,120.0,0.03
+FCBN,Weeping Fig,Ficus benjamina,Ficus,Moraceae,fast,0,singapore,Common urban tree; aerial roots,0.514,chave_2014,0.0673,0.976,,0.893,0.76,Chave 2014; ICRAF WD;; GWDD v2.2,1.5,0.0,0.18,5.5,180.0,0.08
+SAQF,Sea Apple,Syzygium grande,Syzygium,Myrtaceae,moderate,0,singapore,Native coastal; mass white flowering,0.633,chave_2014,0.0673,0.976,,0.893,0.76,Chave 2014; ICRAF WD;; GWDD v2.2,0.9,0.0,0.15,5.5,120.0,0.05
+TRCT,Tembusu,Cyrtophyllum fragrans,Cyrtophyllum,Gentianaceae,slow,0,singapore,National icon; on $5 note,0.695,chave_2014,0.0673,0.976,,0.893,0.76,Chave 2014; ICRAF WD;; GWDD v2.2,0.4,0.0,0.15,5.0,120.0,0.03
+TRGD,Teak,Tectona grandis,Tectona,Lamiaceae,moderate,0,indonesia,Premium plantation timber,0.567,chave_2014,0.0673,0.976,,0.893,0.76,Chave 2014; ICRAF WD;;; GWDD v2.2,0.9,0.0,0.15,5.0,120.0,0.05
+FLML,Batai,Falcataria moluccana,Falcataria,Fabaceae,fast,0,indonesia,Fast pioneer; soft wood,0.28,chave_2014,0.0673,0.976,,0.893,0.76,Chave 2014; ICRAF WD;,1.5,0.0,0.15,5.0,120.0,0.08
+TRGL,Ketapang,Terminalia catappa,Terminalia,Combretaceae,moderate,0,pantropical,Coastal shade; pagoda crown,0.472,chave_2014,0.0673,0.976,,0.893,0.76,Chave 2014; ICRAF WD;; GWDD v2.2,0.9,0.0,0.15,5.0,120.0,0.05
+PLMR,Yellow Palm,Dypsis lutescens,Dypsis,Arecaceae,moderate,1,pantropical,Ornamental clumping palm,0.4,chave_2014,0.0673,0.976,,0.893,0.76,Chave 2014 (palm 0.41);;;,0.0,0.3,0.08,2.5,40.0,0.0
+CNCF,Coconut Palm,Cocos nucifera,Cocos,Arecaceae,moderate,1,pantropical,Ubiquitous tropical palm,0.537,chave_2014,0.0673,0.976,,0.893,0.76,Chave 2014 (palm 0.41);;;; GWDD v2.2,0.0,0.3,0.08,2.5,40.0,0.0
+RYST,Oil Palm,Elaeis guineensis,Elaeis,Arecaceae,fast,1,indonesia,Major crop palm,0.51,chave_2014,0.0673,0.976,,0.893,0.76,Chave 2014 (palm 0.41);;;; GWDD v2.2,0.0,0.6,0.08,2.5,40.0,0.0
+SPTD,African Tulip,Spathodea campanulata,Spathodea,Bignoniaceae,fast,0,pantropical,Invasive in some areas; orange flowers,0.335,chave_2014,0.0673,0.976,,0.893,0.76,Chave 2014; ICRAF WD;; GWDD v2.2,1.5,0.0,0.15,5.0,120.0,0.08
+PLTA,Travellers Palm,Ravenala madagascariensis,Ravenala,Strelitziaceae,fast,1,pantropical,Fan-shaped; palm-like monocot,0.12,chave_2014,0.0673,0.976,,0.893,0.76,Chave 2014 (palm 0.41);;; GWDD v2.2,0.0,0.6,0.08,2.5,40.0,0.0
+CSFL,Golden Shower,Cassia fistula,Cassia,Fabaceae,moderate,0,pantropical,Yellow pendulous flowers,0.72,chave_2014,0.0673,0.976,,0.893,0.76,Chave 2014; ICRAF WD;;; GWDD v2.2,0.9,0.0,0.15,5.0,80.0,0.05
+TBBA,Pink Trumpet,Tabebuia rosea,Tabebuia,Bignoniaceae,moderate,0,pantropical,Cherry blossom of tropics,0.515,chave_2014,0.0673,0.976,,0.893,0.76,Chave 2014; ICRAF WD;;; GWDD v2.2,0.9,0.0,0.15,5.0,80.0,0.05
+PLTS,Saga,Adenanthera pavonina,Adenanthera,Fabaceae,moderate,0,singapore,Red bead tree; nitrogen fixer,0.607,chave_2014,0.0673,0.976,,0.893,0.76,Chave 2014; ICRAF WD;; GWDD v2.2,0.9,0.0,0.15,5.0,120.0,0.05
+SMNR,Rain Tree,Samanea saman,Samanea,Fabaceae,fast,0,singapore,Heritage species; massive canopy,0.537,chave_2014,0.0673,0.976,,0.893,0.76,Chave 2014; ICRAF WD;; GWDD v2.2,1.75,0.0,0.3,6.0,180.0,0.08
+CNLM,Wild Cinnamon,Cinnamomum iners,Cinnamomum,Lauraceae,slow,0,singapore,Aromatic native,0.496,chave_2014,0.0673,0.976,,0.893,0.76,Chave 2014; ICRAF WD;;; GWDD v2.2,0.4,0.0,0.15,5.0,120.0,0.03
+PLPT,Yellow Flame,Peltophorum pterocarpum,Peltophorum,Fabaceae,moderate,0,singapore,Robust street tree; yellow flowers,0.592,chave_2014,0.0673,0.976,,0.893,0.76,Chave 2014; ICRAF WD;; GWDD v2.2,0.9,0.0,0.15,5.0,120.0,0.05
+LGSP,Queen Crepe Myrtle,Lagerstroemia speciosa,Lagerstroemia,Lythraceae,moderate,0,singapore,Bungor; pink-purple flowers,0.547,chave_2014,0.0673,0.976,,0.893,0.76,Chave 2014; ICRAF WD;; GWDD v2.2,0.9,0.0,0.15,5.0,80.0,0.05
+ALSC,Pulai,Alstonia scholaris,Alstonia,Apocynaceae,fast,0,indonesia,Blackboard tree; medicinal,0.374,chave_2014,0.0673,0.976,,0.893,0.76,Chave 2014; ICRAF WD;; GWDD v2.2,1.5,0.0,0.15,5.0,120.0,0.08
+ALAN,Pulai Daun Sempit,Alstonia angustifolia,Alstonia,Apocynaceae,fast,0,malaysia,Narrow-leaved pulai,0.603,chave_2014,0.0673,0.976,,0.893,0.76,Chave 2014; ICRAF WD;;; GWDD v2.2,1.5,0.0,0.15,5.0,120.0,0.08
+FCAL,Bodhi Tree,Ficus religiosa,Ficus,Moraceae,fast,0,pantropical,Sacred fig; heart-shaped leaves,0.445,chave_2014,0.0673,0.976,,0.893,0.76,Chave 2014; ICRAF WD;; GWDD v2.2,1.5,0.0,0.15,5.5,180.0,0.08
+FCMS,Rubber Tree,Ficus elastica,Ficus,Moraceae,fast,0,singapore,Indian rubber fig; large leaves,0.517,chave_2014,0.0673,0.976,,0.893,0.76,Chave 2014; ICRAF WD;; GWDD v2.2,1.5,0.0,0.15,5.5,180.0,0.08
+FCVR,White Fig,Ficus virens,Ficus,Moraceae,fast,0,singapore,Deciduous fig; pillar roots,0.44,chave_2014,0.0673,0.976,,0.893,0.76,Chave 2014; ICRAF WD;; GWDD v2.2,1.5,0.0,0.15,5.5,180.0,0.08
+FCMC,Chinese Banyan,Ficus microcarpa,Ficus,Moraceae,fast,0,singapore,Common park tree; aerial roots,0.523,chave_2014,0.0673,0.976,,0.893,0.76,Chave 2014; ICRAF WD;; GWDD v2.2,1.5,0.0,0.15,5.5,180.0,0.08
+ERVA,Coral Tree,Erythrina variegata,Erythrina,Fabaceae,fast,0,pantropical,Dadap; red flowers; very light wood,0.237,chave_2014,0.0673,0.976,,0.893,0.76,Chave 2014; ICRAF WD; GWDD v2.2,1.5,0.0,0.15,5.0,120.0,0.08
+CLPH,Bintangor,Calophyllum inophyllum,Calophyllum,Calophyllaceae,moderate,0,singapore,Beach calophyllum; oil seeds,0.543,chave_2014,0.0673,0.976,,0.893,0.76,Chave 2014; ICRAF WD;; GWDD v2.2,0.9,0.0,0.15,5.0,120.0,0.05
+HPOD,Chengal Pasir,Hopea odorata,Hopea,Dipterocarpaceae,slow,0,vietnam,Premium hardwood; SE Asian native,0.638,chave_2014,0.0673,0.976,,0.893,0.76,Chave 2014; ICRAF WD;; GWDD v2.2,0.4,0.0,0.15,5.0,120.0,0.03
+KSGN,African Mahogany,Khaya senegalensis,Khaya,Meliaceae,moderate,0,pantropical,Dry-season deciduous; termite resistant,0.648,chave_2014,0.0673,0.976,,0.893,0.76,Chave 2014; ICRAF WD;; GWDD v2.2,0.9,0.0,0.15,5.0,120.0,0.05
+PLLN,Glodokan,Polyalthia longifolia,Polyalthia,Annonaceae,moderate,0,indonesia,Columnar form; privacy screen,0.56,chave_2014,0.0673,0.976,,0.893,0.76,Chave 2014; ICRAF WD;,0.9,0.0,0.08,4.0,120.0,0.05
+SCOL,Kesambi,Schleichera oleosa,Schleichera,Sapindaceae,slow,0,indonesia,Ceylon oak; very hard wood,0.806,chave_2014,0.0673,0.976,,0.893,0.76,Chave 2014; ICRAF WD;; GWDD v2.2,0.4,0.0,0.15,5.0,120.0,0.03
+PLMR2,Frangipani,Plumeria rubra,Plumeria,Apocynaceae,moderate,0,pantropical,Kamboja; temple tree; fragrant flowers,0.514,chave_2014,0.0673,0.976,,0.893,0.76,Chave 2014; ICRAF WD; GWDD v2.2,0.9,0.0,0.15,5.0,120.0,0.05
+TBPT,Trumpet Tree,Tabebuia pallida,Tabebuia,Bignoniaceae,moderate,0,pantropical,White trumpet flowers,0.495,chave_2014,0.0673,0.976,,0.893,0.76,Chave 2014; ICRAF WD;;; GWDD v2.2,0.9,0.0,0.15,5.0,80.0,0.05
+SYZP,Jambu Air,Syzygium aqueum,Syzygium,Myrtaceae,moderate,0,indonesia,Water apple; edible fruit,0.55,chave_2014,0.0673,0.976,,0.893,0.76,Chave 2014; ICRAF WD;,0.9,0.0,0.15,5.5,120.0,0.05
+SYZM,Kelat,Syzygium myrtifolium,Syzygium,Myrtaceae,moderate,0,singapore,Red lip; compact crown; popular hedge tree,0.62,chave_2014,0.0673,0.976,,0.893,0.76,Chave 2014; ICRAF WD,0.9,0.0,0.15,5.5,120.0,0.05
+FLDC,Fern Tree,Filicium decipiens,Filicium,Sapindaceae,slow,0,singapore,Fern-like leaves; elegant shade tree,0.692,chave_2014,0.0673,0.976,,0.893,0.76,Chave 2014; ICRAF WD;; GWDD v2.2,0.4,0.0,0.15,5.0,120.0,0.03
+MSNF,Breadfruit,Artocarpus altilis,Artocarpus,Moraceae,fast,0,pantropical,Sukun; large lobed leaves,0.343,chave_2014,0.0673,0.976,,0.893,0.76,Chave 2014; ICRAF WD;; GWDD v2.2,1.5,0.0,0.15,5.0,120.0,0.08
+ARHT,Jackfruit,Artocarpus heterophyllus,Artocarpus,Moraceae,moderate,0,indonesia,Nangka; edible fruit; durable wood,0.465,chave_2014,0.0673,0.976,,0.893,0.76,Chave 2014; ICRAF WD; GWDD v2.2,0.9,0.0,0.15,5.0,120.0,0.05
+MNGI,Mango,Mangifera indica,Mangifera,Anacardiaceae,moderate,0,indonesia,Widespread fruit tree; large canopy,0.53,chave_2014,0.0673,0.976,,0.893,0.76,Chave 2014; ICRAF WD;; GWDD v2.2,0.9,0.0,0.15,5.0,120.0,0.05
+GNMN,Gnetum,Gnetum gnemon,Gnetum,Gnetaceae,slow,0,indonesia,Melinjo; emping snack source,0.6,chave_2014,0.0673,0.976,,0.893,0.76,Chave 2014; ICRAF WD;; GWDD v2.2,0.4,0.0,0.15,5.0,120.0,0.03
+BRGT,Bougainvillea,Bougainvillea spectabilis,Bougainvillea,Nyctaginaceae,fast,0,pantropical,Ornamental; trained as small tree,0.415,chave_2014,0.0673,0.976,,0.893,0.76,Chave 2014; ICRAF WD;; GWDD v2.2,1.5,0.0,0.15,5.0,120.0,0.08
+ACMG,Acacia Mangium,Acacia mangium,Acacia,Fabaceae,fast,0,indonesia,Fast-growing plantation; nitrogen fixer,0.469,chave_2014,0.0673,0.976,,0.893,0.76,Chave 2014; ICRAF WD;; GWDD v2.2,1.5,0.0,0.15,5.0,120.0,0.08
+ACAU,Acacia Auriculiformis,Acacia auriculiformis,Acacia,Fabaceae,fast,0,indonesia,Ear-pod wattle; erosion control,0.629,chave_2014,0.0673,0.976,,0.893,0.76,Chave 2014; ICRAF WD;; GWDD v2.2,1.5,0.0,0.15,5.0,120.0,0.08
+LCCN,Longan,Dimocarpus longan,Dimocarpus,Sapindaceae,moderate,0,thailand,Kelengkeng; fruit tree; dense canopy,0.813,chave_2014,0.0673,0.976,,0.893,0.76,Chave 2014; ICRAF WD; GWDD v2.2,0.9,0.0,0.15,5.0,120.0,0.05
+DRZB,Durian,Durio zibethinus,Durio,Malvaceae,slow,0,indonesia,King of fruits; tall canopy tree,0.487,chave_2014,0.0673,0.976,,0.893,0.76,Chave 2014; ICRAF WD;; GWDD v2.2,0.4,0.0,0.15,5.0,120.0,0.03
+GNRB,Rambutan,Nephelium lappaceum,Nephelium,Sapindaceae,moderate,0,indonesia,Hairy lychee; popular fruit tree,0.712,chave_2014,0.0673,0.976,,0.893,0.76,Chave 2014; ICRAF WD;; GWDD v2.2,0.9,0.0,0.15,5.0,120.0,0.05
+CRPT,Kayu Manis,Cinnamomum burmannii,Cinnamomum,Lauraceae,moderate,0,indonesia,Indonesian cinnamon; spice tree,0.46,chave_2014,0.0673,0.976,,0.893,0.76,Chave 2014; ICRAF WD;,0.9,0.0,0.15,5.0,120.0,0.05
+MLIA,Mindi,Melia azedarach,Melia,Meliaceae,fast,0,pantropical,Chinaberry; fast shade; pest resistant,0.43,chave_2014,0.0673,0.976,,0.893,0.76,Chave 2014; ICRAF WD; GWDD v2.2,1.5,0.0,0.15,5.0,120.0,0.08
+CLST,Satin Leaf,Chrysophyllum cainito,Chrysophyllum,Sapotaceae,moderate,0,pantropical,Star apple; ornamental shade,0.736,chave_2014,0.0673,0.976,,0.893,0.76,Chave 2014; ICRAF WD;; GWDD v2.2,0.9,0.0,0.15,5.0,120.0,0.05
+MNCF,Norfolk Pine,Araucaria heterophylla,Araucaria,Araucariaceae,slow,0,pantropical,Cemara; conical form; coastal,0.45,chave_2014,0.0673,0.976,,0.893,0.76,Chave 2014; ICRAF WD,0.4,0.0,0.15,5.0,120.0,0.03
+CSSM,Senna,Senna siamea,Senna,Fabaceae,fast,0,thailand,Johar; fast street tree; yellow flowers,0.673,chave_2014,0.0673,0.976,,0.893,0.76,Chave 2014; ICRAF WD; GWDD v2.2,1.5,0.0,0.15,5.0,120.0,0.08
+TRMD,Trema,Trema orientalis,Trema,Cannabaceae,fast,0,pantropical,Pioneer; rapid regreening,0.351,chave_2014,0.0673,0.976,,0.893,0.76,Chave 2014; ICRAF WD;; GWDD v2.2,1.5,0.0,0.15,5.0,120.0,0.08
+CBSG,Bunga Kupu-kupu,Bauhinia purpurea,Bauhinia,Fabaceae,moderate,0,pantropical,Orchid tree; butterfly flowers,0.444,chave_2014,0.0673,0.976,,0.893,0.76,Chave 2014; ICRAF WD;; GWDD v2.2,0.9,0.0,0.15,5.0,120.0,0.05
+MRKP,Markhamia,Markhamia lutea,Markhamia,Bignoniaceae,moderate,0,pantropical,Yellow trumpet; African origin,0.472,chave_2014,0.0673,0.976,,0.893,0.76,Chave 2014; ICRAF WD;; GWDD v2.2,0.9,0.0,0.15,5.0,120.0,0.05
+TNDR,Tanjung,Brunfelsia pauciflora,Brunfelsia,Solanaceae,moderate,0,pantropical,Yesterday-today-tomorrow; ornamental,0.42,chave_2014,0.0673,0.976,,0.893,0.76,Chave 2014; ICRAF WD;,0.9,0.0,0.15,5.0,120.0,0.05
+RYSN,Royal Palm,Roystonea regia,Roystonea,Arecaceae,moderate,1,pantropical,Palem raja; stately avenue palm,0.52,chave_2014,0.0673,0.976,,0.893,0.76,Chave 2014 (palm 0.41);;; GWDD v2.2,0.0,0.3,0.08,2.5,40.0,0.0
+ARNG,Pinang,Areca catechu,Areca,Arecaceae,moderate,1,indonesia,Betel nut palm; slender trunk,0.56,chave_2014,0.0673,0.976,,0.893,0.76,Chave 2014 (palm 0.41);;; GWDD v2.2,0.0,0.3,0.08,2.5,40.0,0.0
+LVSN,Fan Palm,Livistona chinensis,Livistona,Arecaceae,slow,1,singapore,Chinese fan palm; park feature,0.165,chave_2014,0.0673,0.976,,0.893,0.76,Chave 2014 (palm 0.41);;; GWDD v2.2,0.0,0.15,0.08,2.5,40.0,0.0
+PTCR2,Foxtail Palm,Wodyetia bifurcata,Wodyetia,Arecaceae,moderate,1,pantropical,Bushy foxtail fronds; ornamental,0.42,chave_2014,0.0673,0.976,,0.893,0.76,Chave 2014 (palm 0.41);;,0.0,0.3,0.08,2.5,40.0,0.0
+LCLC,Lamtoro,Leucaena leucocephala,Leucaena,Fabaceae,fast,0,pantropical,Nitrogen fixer; fast pioneer,0.636,chave_2014,0.0673,0.976,,0.893,0.76,Chave 2014; ICRAF WD;; GWDD v2.2,1.5,0.0,0.15,5.0,120.0,0.08
+DLID,Asam Kranji,Dialium indum,Dialium,Fabaceae,slow,0,indonesia,Hard native; kranji fruit,0.818,chave_2014,0.0673,0.976,,0.893,0.76,Chave 2014; ICRAF WD;; GWDD v2.2,0.4,0.0,0.15,5.0,120.0,0.03
+ALML,Kemiri,Aleurites moluccanus,Aleurites,Euphorbiaceae,moderate,0,indonesia,Candlenut; oil seeds,0.348,chave_2014,0.0673,0.976,,0.893,0.76,Chave 2014; ICRAF WD;; GWDD v2.2,0.9,0.0,0.15,5.0,120.0,0.05
+ECDG,Leda,Eucalyptus deglupta,Eucalyptus,Myrtaceae,fast,0,indonesia,Rainbow gum; colorful bark,0.499,chave_2014,0.0673,0.976,,0.893,0.76,Chave 2014; ICRAF WD;; GWDD v2.2,1.5,0.0,0.15,5.0,120.0,0.08
+CBMG,Bintaro,Cerbera manghas,Cerbera,Apocynaceae,moderate,0,indonesia,Sea mango; coastal ornamental,0.328,chave_2014,0.0673,0.976,,0.893,0.76,Chave 2014; ICRAF WD;; GWDD v2.2,0.9,0.0,0.15,5.0,120.0,0.05
+MTCL,Kersen,Muntingia calabura,Muntingia,Muntingiaceae,fast,0,pantropical,Cherry tree; fast fruiting,0.3,chave_2014,0.0673,0.976,,0.893,0.76,Chave 2014; ICRAF WD;; GWDD v2.2,1.5,0.0,0.15,5.0,120.0,0.08
+CBPT,Kapuk,Ceiba pentandra,Ceiba,Malvaceae,fast,0,pantropical,Kapok; very light wood,0.305,chave_2014,0.0673,0.976,,0.893,0.76,Chave 2014; ICRAF WD;; GWDD v2.2,1.5,0.0,0.15,5.0,120.0,0.08
+TMID,Asam Jawa,Tamarindus indica,Tamarindus,Fabaceae,slow,0,pantropical,Tamarind; hard dense wood,0.779,chave_2014,0.0673,0.976,,0.893,0.76,Chave 2014; ICRAF WD;; GWDD v2.2,0.4,0.0,0.15,5.0,120.0,0.03
+TRMY,Ketapang Kencana,Terminalia mantaly,Terminalia,Combretaceae,moderate,0,pantropical,Madagascar almond; ornamental,0.647,chave_2014,0.0673,0.976,,0.893,0.76,Chave 2014; ICRAF WD;; GWDD v2.2,0.9,0.0,0.15,5.0,120.0,0.05
+TBAU,Tabe Kuning,Tabebuia aurea,Tabebuia,Bignoniaceae,moderate,0,pantropical,Yellow trumpet tree,0.65,chave_2014,0.0673,0.976,,0.893,0.76,Chave 2014; ICRAF WD; GWDD v2.2,0.9,0.0,0.15,5.0,80.0,0.05
+CPSC,Tabe Kuning,Tabebuia chrysantha,Tabebuia,Bignoniaceae,moderate,0,indonesia,Golden trumpet tree,0.8,chave_2014,0.0673,0.976,,0.893,0.76,Chave 2014; ICRAF WD,0.9,0.0,0.15,5.0,80.0,0.05
+PDMC,Lohansung,Podocarpus macrophyllus,Podocarpus,Podocarpaceae,slow,0,indonesia,Ornamental conifer,0.55,chave_2014,0.0673,0.976,,0.893,0.76,Chave 2014; ICRAF WD; GWDD v2.2,0.4,0.0,0.15,5.0,120.0,0.03
+PLOB,Balibong,Palaquium obovatum,Palaquium,Sapotaceae,slow,0,indonesia,Ornamental exotic trunk,0.528,chave_2014,0.0673,0.976,,0.893,0.76,Chave 2014; ICRAF WD; GWDD v2.2,0.4,0.0,0.15,5.0,120.0,0.03
+DDAS,Bambu Petung,Dendrocalamus asper,Dendrocalamus,Poaceae,fast,1,indonesia,Giant bamboo,0.6,chave_2014,0.0673,0.976,,0.893,0.76,Chave 2014; ICRAF WD,0.0,0.6,0.08,2.5,40.0,0.0
+CSEQ,Cemara Angin,Casuarina equisetifolia,Casuarina,Casuarinaceae,fast,0,indonesia,Coastal conifer,0.827,chave_2014,0.0673,0.976,,0.893,0.76,Chave 2014; ICRAF WD; GWDD v2.2,1.5,0.0,0.12,4.0,120.0,0.08
+AGDM,Damar,Agathis dammara,Agathis,Araucariaceae,moderate,0,indonesia,Resin-producing conifer,0.494,chave_2014,0.0673,0.976,,0.893,0.76,Chave 2014; ICRAF WD; GWDD v2.2,0.9,0.0,0.15,5.0,120.0,0.05
+SZJM,Jambu Mawar,Syzygium jambos,Syzygium,Myrtaceae,moderate,0,indonesia,Rose apple,0.624,chave_2014,0.0673,0.976,,0.893,0.76,Chave 2014; ICRAF WD; GWDD v2.2,0.9,0.0,0.15,5.5,120.0,0.05
+MLCJ,Kayu Putih,Melaleuca cajuputi,Melaleuca,Myrtaceae,moderate,0,indonesia,Cajuput tree,0.75,chave_2014,0.0673,0.976,,0.893,0.76,Chave 2014; ICRAF WD,0.9,0.0,0.15,5.0,120.0,0.05
+MROL,Kelor Africa,Moringa oleifera,Moringa,Moringaceae,fast,0,indonesia,Drumstick tree,0.265,chave_2014,0.0673,0.976,,0.893,0.76,Chave 2014; ICRAF WD; GWDD v2.2,1.5,0.0,0.15,5.0,120.0,0.08
+TRMN,Ketapang Mini,Terminalia mantaly,Terminalia,Combretaceae,moderate,0,indonesia,Umbrella tree,0.647,chave_2014,0.0673,0.976,,0.893,0.76,Chave 2014; ICRAF WD; GWDD v2.2,0.9,0.0,0.15,5.0,120.0,0.05
+SLBB,Liang Liu,Salix babylonica,Salix,Salicaceae,fast,0,indonesia,Weeping willow,0.426,chave_2014,0.0673,0.976,,0.893,0.76,Chave 2014; ICRAF WD; GWDD v2.2,1.5,0.0,0.15,5.0,120.0,0.08
+SZPR,Pakis Brazil,Schizolobium parahyba,Schizolobium,Fabaceae,fast,0,indonesia,Brazilian firetree,0.386,chave_2014,0.0673,0.976,,0.893,0.76,Chave 2014; ICRAF WD; GWDD v2.2,1.5,0.0,0.15,5.0,120.0,0.08
+HIMP,Tabebuia Pink,Handroanthus impetiginosus,Handroanthus,Bignoniaceae,moderate,0,indonesia,Pink trumpet tree,0.78,chave_2014,0.0673,0.976,,0.893,0.76,Chave 2014; ICRAF WD;;; GWDD v2.2,0.9,0.0,0.15,5.0,120.0,0.05
+PLOB2,Kamboja Putih,Plumeria obtusa,Plumeria,Apocynaceae,moderate,0,pantropical,White frangipani; compact ornamental,0.514,chave_2014,0.0673,0.976,,0.893,0.76,Chave 2014; ICRAF WD; GWDD v2.2,0.9,0.0,0.15,5.0,120.0,0.05
+PNBT,Pandan Bali,Pandanus baptistii,Pandanus,Pandanaceae,moderate,0,indonesia,Ornamental screwpine; variegated leaves,0.42,chave_2014,0.0673,0.976,,0.893,0.76,Chave 2014; ICRAF WD,0.9,0.0,0.15,5.0,120.0,0.05
+CLVM,Sikat Botol,Callistemon viminalis,Callistemon,Myrtaceae,moderate,0,pantropical,Weeping bottlebrush; red flowers,0.7,chave_2014,0.0673,0.976,,0.893,0.76,Chave 2014; ICRAF WD; GWDD v2.2,0.9,0.0,0.15,5.0,120.0,0.05
+ADDI,Baobab,Adansonia digitata,Adansonia,Malvaceae,slow,0,pantropical,African baobab; massive trunk water storage,0.3,chave_2014,0.0673,0.976,,0.893,0.76,Chave 2014; ICRAF WD; GWDD v2.2,0.4,0.0,0.15,5.0,120.0,0.03

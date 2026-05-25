@@ -271,6 +271,10 @@ DEFAULT_PALM_HEIGHT_GROWTH_M: float = 0.30
 DEFAULT_CROWN_MODIFIER: float = 0.15
 DEFAULT_SPECIES_LAI: float = 5.0
 
+DEFAULT_DBH_MAX: float = 120.0
+DEFAULT_PALM_DBH_MAX: float = 40.0
+DEFAULT_GROWTH_K: float = 0.05
+
 # Mapping from categorical growth description to numeric fallbacks (non-palms)
 CATEGORICAL_GROWTH_MAP: Dict[str, float] = {
     "slow": 0.40,
