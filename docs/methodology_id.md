@@ -71,6 +71,54 @@ $$\text{AGB} = a \times \rho \times D^b$$
 | a | 0.11 | Ketterings et al. (2001) |
 | b | 2.62 | Ketterings et al. (2001) |
 
+#### Model Batang Silindris Palem (Monokotil)
+
+Untuk spesies palem-paleman (monokotil di mana `is_palm = 1`), persamaan alometrik standar dikotil (seperti Chave 2014) secara biologis tidak tepat karena batang palem berbentuk silinder, tidak mengalami pertumbuhan lateral sekunder (pelebaran DBH) setelah tumbuh tegak, dan tidak meruncing di bagian atas seperti dikotil.
+
+Biomassa kering di atas tanah (AGB) dihitung menggunakan rumus volume batang silindris:
+
+$$\text{AGB}_{\text{palm}} = 0.07854 \times \rho \times D^2 \times H$$
+
+Di mana:
+- $\text{AGB}$: Biomassa kering di atas tanah (kg)
+- $\rho$: Berat jenis kayu / specific gravity (g/cm³)
+- $D$: Diameter setinggi dada (cm)
+- $H$: Tinggi pohon (m)
+
+*Penurunan Rumus:*
+Volume silinder adalah $V = \pi \times (\frac{D}{200})^2 \times H = \frac{\pi}{40000} \times D^2 \times H$ (m³). Mengonversi volume ke berat kering menggunakan densitas $\rho \times 1000$ (kg/m³) menghasilkan:
+$$\text{AGB} = \frac{\pi}{40000} \times 1000 \times \rho \times D^2 \times H \approx 0.07854 \times \rho \times D^2 \times H$$
+
+> **Sumber:**
+> - Frangi, J. L., & Lugo, A. E. (1985). "Ecosystem dynamics of a subtropical floodplain forest." *Ecological Monographs*, 55(3), 351-369.
+> - Goodman, R. C., et al. (2013). "Amazon palm biomass templates." *Forest Ecology and Management*, 291, 230-237.
+> - Nowak, D. J. (2020). "i-Tree Eco Palm Biomass Estimation." USDA Forest Service.
+
+#### Model Kayu & Dedaunan Berbasis Morfologi (Dikotil)
+
+Untuk pohon dikotil standar, biomassa di atas tanah diperinci dengan memisahkan komponen biomassa kayu dan dedaunan berdasarkan sifat morfologi:
+
+$$\text{AGB} = \text{Woody}_{\text{adjusted}} + \text{Foliage}$$
+
+Di mana:
+1. **Komponen Kayu:** Dipisahkan dari biomassa dasar Chave menggunakan fraksi dedaunan standar:
+   $$\text{Woody}_{\text{base}} = \text{AGB}_{\text{Chave\_Base}} \times (1 - \text{DEFAULT\_FOLIAGE\_FRACTION})$$
+   $$\text{Woody}_{\text{adjusted}} = \text{Woody}_{\text{base}} \times f_{\text{trunk}} \times f_{\text{crown}}$$
+   - $f_{\text{trunk}}$: Pengali jenis batang (misal: Standar = `1.0`, Berbanir = `1.15`, Batang Ganda = `0.85`).
+   - $f_{\text{crown}}$: Pengali bentuk tajuk berdasarkan nilai pengali tajuk $k_{cw}$ (Kolom/Tiang = `0.80`, Kerucut = `0.90`, Bulat = `1.00`, Melebar/Payung = `1.15`).
+
+2. **Komponen Dedaunan:** Dihitung secara eksplisit berdasarkan Indeks Area Daun (LAI) spesifik spesies dan Berat Daun Spesifik (SLW) sesuai bentuk daun:
+   $$\text{Foliage} = \text{Crown\_Area} \times \text{LAI}_{\text{species}} \times \text{SLW}$$
+   - $\text{Crown\_Area} = \pi \times \left(\frac{CW}{2}\right)^2$ (m²)
+   - $CW = 0.6 + k_{cw} \times DBH$ (m)
+   - $\text{LAI}_{\text{species}}$: Indeks Area Daun dari spesies tersebut (default = `5.0`).
+   - $\text{SLW}$: Berat Daun Spesifik (kg/m²), ditentukan oleh bentuk daun (Tunggal = `0.12`, Majemuk = `0.09`, Jarum = `0.22`, Kipas Palem = `0.32`).
+
+> **Sumber:**
+> - Nowak, D. J. (1996). "Estimating leaf area and leaf biomass of individual open-grown deciduous trees." *Forest Science*, 42(3), 270-275.
+> - Peper, P. J., & McPherson, E. G. (2003). "Evaluation of four methods for estimating leaf area of isolated trees." *Urban Forestry & Urban Greening*, 2(1), 19-29.
+> - Asner, G. P., et al. (2003). "Global synthesis of leaf area index observations." *Global Ecology and Biogeography*, 12(3), 191-205.
+
 ---
 
 ## 3. Penyerapan Karbon
@@ -289,16 +337,29 @@ Ketika mencari koefisien alometrik, mesin mengikuti fallback 3 tingkat:
 
 Pengguna dapat menyesuaikan jangka waktu prakiraan dari **1 hingga 100 tahun**, memungkinkan pemantauan jangka pendek maupun pemodelan jangka panjang. Mesin melacak pertumbuhan absolut ($\Delta\text{DBH}$ dan $\Delta\text{Tinggi}$) bersama dengan manfaat yang diperoleh.
 
-Mulai dari DBH awal (default 5 cm untuk pohon baru, diukur untuk pohon eksisting):
+Mulai dari DBH dan tinggi awal, proyeksi pertumbuhan dipisahkan berdasarkan tipe pohon:
 
+**Untuk Pohon Dikotil (Daun Lebar Standar/Gugur/Hijau Abadi):**
 ```
-Untuk setiap tahun 0..N:
-    DBH(t) = DBH(0) + ΔD × t
-    Tinggi(t) = H(0) × [DBH(t) / DBH(0)]^0.5
-    Biomass(t) = hitung_biomassa(DBH(t), H(t))
+Untuk setiap tahun 1..N:
+    DBH(t) = DBH(t-1) + true_growth_rate_cm
+    Tinggi(t) = Tinggi(0) * [DBH(t) / DBH(0)]^0.5
+    Biomass(t) = hitung_biomassa(DBH(t), Tinggi(t), koefisien, is_palm=False)
+```
+
+**Untuk Pohon Monokotil (Palem-paleman):**
+```
+Untuk setiap tahun 1..N:
+    DBH(t) = DBH(0)   (ketebalan batang tetap konstan)
+    Tinggi(t) = Tinggi(t-1) + palm_height_growth_m
+    Biomass(t) = hitung_biomassa(DBH(t), Tinggi(t), koefisien, is_palm=True)
+```
+
+Untuk semua pohon, layanan ekosistem dihitung secara dinamis pada setiap langkah waktu `t` menggunakan:
+```
     Penyerapan(t) = Karbon(t) - Karbon(t-1)
-    Air Hujan(t) = proksi_intersepsi(DBH(t))
-    Polusi(t) = proksi_penyaringan(DBH(t))
+    Air Hujan(t) = estimate_stormwater_interception(DBH(t), resolved_lai, rain_events, crown_modifier)
+    Polusi(t) = estimate_pollution_removal(DBH(t), resolved_lai, pollution_multiplier, crown_modifier)
 ```
 
 ### 10.2 Estimasi Tinggi dan Model Pertumbuhan

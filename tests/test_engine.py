@@ -52,6 +52,11 @@ def angsana_coefficients() -> AllometricCoefficients:
         height_model_form="power",
         match_level="species",
         source="test",
+        true_growth_rate_cm=1.1,
+        palm_height_growth_m=0.0,
+        crown_modifier=0.28,
+        species_lai=5.5,
+        species="Pterocarpus indicus",
     )
 
 
@@ -70,6 +75,11 @@ def coconut_coefficients() -> AllometricCoefficients:
         height_model_form="power",
         match_level="species",
         source="test",
+        true_growth_rate_cm=0.0,
+        palm_height_growth_m=0.3,
+        crown_modifier=0.15,
+        species_lai=2.5,
+        species="Cocos nucifera",
     )
 
 
@@ -93,13 +103,46 @@ class TestEstimateHeight:
 class TestCalculateAGB:
     def test_with_height(self, angsana_coefficients):
         dbh, h, rho = 30.0, 12.0, 0.55
-        expected = CHAVE_A * (rho * dbh**2 * h) ** CHAVE_B * URBAN_ADJUSTMENT
+        # Calculate expected using updated formula
+        agb_base = CHAVE_A * (rho * dbh**2 * h) ** CHAVE_B
+        woody_base = agb_base * 0.97
+        
+        # Angsana has crown_modifier=0.28, species_lai=5.5, species="Pterocarpus indicus"
+        # trunk_mult = 1.0, crown_shape_mult = 1.15 (since crown_modifier = 0.28 > 0.20)
+        # cw = 0.6 + 0.28 * 30.0 = 9.0
+        # ca = pi * (9.0/2)^2 = 63.617
+        # la = ca * 5.5 = 349.89
+        # slw = 0.09 (compound leaf)
+        # foliage = 349.89 * 0.09 = 31.490
+        # woody_adjusted = woody_base * 1.0 * 1.15
+        # total_agb = (woody_adjusted + foliage) * 0.80
+        
+        cw = 0.6 + angsana_coefficients.crown_modifier * dbh
+        ca = math.pi * (cw / 2.0) ** 2
+        la = ca * angsana_coefficients.species_lai
+        slw = 0.09  # Pterocarpus is compound
+        foliage = la * slw
+        
+        woody_adjusted = woody_base * 1.0 * 1.15
+        expected = (woody_adjusted + foliage) * URBAN_ADJUSTMENT
+        
         result = calculate_agb(dbh, h, rho, angsana_coefficients, is_urban=True)
         assert result == pytest.approx(expected, rel=1e-3)
 
     def test_without_urban_adjustment(self, angsana_coefficients):
         dbh, h, rho = 30.0, 12.0, 0.55
-        expected = CHAVE_A * (rho * dbh**2 * h) ** CHAVE_B
+        agb_base = CHAVE_A * (rho * dbh**2 * h) ** CHAVE_B
+        woody_base = agb_base * 0.97
+        
+        cw = 0.6 + angsana_coefficients.crown_modifier * dbh
+        ca = math.pi * (cw / 2.0) ** 2
+        la = ca * angsana_coefficients.species_lai
+        slw = 0.09
+        foliage = la * slw
+        
+        woody_adjusted = woody_base * 1.0 * 1.15
+        expected = woody_adjusted + foliage
+        
         result = calculate_agb(dbh, h, rho, angsana_coefficients, is_urban=False)
         assert result == pytest.approx(expected, rel=1e-3)
 
@@ -213,3 +256,39 @@ class TestForecast:
     def test_first_year_zero_sequestration(self, angsana_coefficients):
         rows = forecast_growth(5.0, angsana_coefficients, years=3)
         assert rows[0].carbon_sequestration_kg == 0.0
+
+
+# ── Palm & Crown Modifier Tests ──
+
+class TestPalmAGBAndGrowth:
+    def test_palm_agb_cylindrical(self, coconut_coefficients):
+        dbh, h, rho = 25.0, 10.0, 0.45
+        # Palm cylindrical formula: 0.07854 * wood_density * D^2 * H * urban_adjustment
+        expected = 0.07854 * rho * (dbh ** 2) * h * URBAN_ADJUSTMENT
+        result = calculate_agb(dbh, h, rho, coconut_coefficients, is_urban=True, is_palm=True)
+        assert result == pytest.approx(expected, rel=1e-3)
+
+    def test_palm_growth_forecast(self, coconut_coefficients):
+        # Coconut palm: DBH should remain constant, height should grow
+        rows = forecast_growth(
+            initial_dbh_cm=25.0,
+            coefficients=coconut_coefficients,
+            years=5,
+            initial_height_m=10.0,
+            is_palm=True
+        )
+        assert len(rows) == 6
+        for i in range(1, len(rows)):
+            assert rows[i].dbh_cm == 25.0
+            assert rows[i].height_m == pytest.approx(10.0 + 0.3 * i, rel=1e-3)
+
+
+class TestCrownModifier:
+    def test_crown_width_modifiers(self):
+        # Columnar: modifier = 0.08
+        cw_col = estimate_crown_width(30.0, crown_modifier=0.08)
+        assert cw_col == 0.6 + 0.08 * 30.0
+        
+        # Spreading: modifier = 0.28
+        cw_spr = estimate_crown_width(30.0, crown_modifier=0.28)
+        assert cw_spr == 0.6 + 0.28 * 30.0

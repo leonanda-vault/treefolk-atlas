@@ -58,6 +58,11 @@ from itree_sea.config import (
     DEFAULT_HEIGHT_A,
     DEFAULT_HEIGHT_B,
     CONDITION_MULTIPLIERS,
+    DEFAULT_TRUE_GROWTH_RATE_CM,
+    DEFAULT_PALM_HEIGHT_GROWTH_M,
+    DEFAULT_CROWN_MODIFIER,
+    DEFAULT_SPECIES_LAI,
+    DEFAULT_FOLIAGE_FRACTION,
 )
 from itree_sea.database import AllometricCoefficients
 
@@ -188,59 +193,104 @@ def estimate_height(
 # 2. ABOVEGROUND BIOMASS (AGB)
 # ──────────────────────────────────────────────────────────────────────
 
+def get_trunk_multiplier(scientific_name: Optional[str]) -> float:
+    """Determine trunk type multiplier based on species name."""
+    if not scientific_name:
+        return 1.0
+    name = scientific_name.lower().strip()
+    # Buttressed species
+    if any(k in name for k in ["samanea saman", "ficus", "dialium", "adansonia", "trembesi", "beringin", "asam kranji", "baobab"]):
+        return 1.15
+    # Multi-stemmed species
+    if any(k in name for k in ["plumeria", "callistemon", "frangipani", "sikat botol"]):
+        return 0.85
+    return 1.0
+
+
+def get_crown_shape_multiplier(crown_modifier: float) -> float:
+    """Determine crown shape multiplier based on crown modifier value."""
+    if crown_modifier <= 0.10:
+        return 0.80  # columnar
+    elif crown_modifier <= 0.13:
+        return 0.90  # conical
+    elif crown_modifier <= 0.20:
+        return 1.00  # spherical
+    else:
+        return 1.15  # spreading
+
+
+def get_leaf_shape_slw(scientific_name: Optional[str], is_palm: bool) -> float:
+    """Determine Specific Leaf Weight (SLW, kg/m2) based on leaf shape/species."""
+    if is_palm:
+        return 0.32  # palm_fan
+    if not scientific_name:
+        return 0.12  # broadleaf_simple
+    name = scientific_name.lower().strip()
+    # Conifers/needles
+    if any(k in name for k in ["casuarina", "araucaria", "podocarpus", "agathis", "conifer", "cemara", "damar"]):
+        return 0.22  # needle
+    # Compound leaf genera
+    compound_genera = [
+        "pterocarpus", "swietenia", "delonix", "samanea", "erythrina", 
+        "khaya", "senna", "leucaena", "dialium", "tamarindus", 
+        "schizolobium", "moringa", "angsana", "mahoni", "trembesi", "flamboyan",
+        "mindi", "lamtoro", "asam"
+    ]
+    if any(name.startswith(g) or g in name for g in compound_genera):
+        return 0.09  # broadleaf_compound
+    return 0.12  # broadleaf_simple
+
+
 def calculate_agb(
     dbh_cm: float,
     height_m: Optional[float],
     wood_density: float,
     coefficients: Optional[AllometricCoefficients] = None,
     is_urban: bool = True,
+    is_palm: bool = False,
 ) -> float:
     """Calculate aboveground dry-weight biomass (kg).
 
-    When height is available, uses the primary Chave (2014) equation:
-        AGB = a × (ρ × D² × H)^b
+    When height is available and it is a palm, uses a cylindrical palm model:
+        AGB = 0.07854 × ρ × D² × H
 
-    When height is unavailable, uses the no-height alternative:
-        ln(AGB) = β₀ + β₁·E + β₂·ln(ρ) + β₃·ln(D) + β₄·[ln(D)]²
+    When it is not a palm, uses the morphology-driven woody + foliage model:
+        Woody = Chave_AGB_Base × 0.97 × trunk_multiplier × crown_shape_multiplier
+        Foliage = Crown_Area × LAI × SLW
+        AGB = Woody + Foliage
 
-    Parameters
-    ----------
-    dbh_cm : float
-        Diameter at breast height in cm.  Must be > 0.
-    height_m : float or None
-        Total tree height in m.  If None, the no-height equation is used
-        (or height is estimated if coefficients provide height model params).
-    wood_density : float
-        Basic wood specific gravity in g/cm³.
-    coefficients : AllometricCoefficients, optional
-        If provided, uses the equation form and constants from the DB.
-        Otherwise uses Chave (2014) pantropical defaults.
-    is_urban : bool
-        If True, applies the 0.8 urban open-grown adjustment.
-
-    Returns
-    -------
-    float
-        Aboveground biomass in kg.  Returns 0.0 for invalid inputs.
+    When height is unavailable, uses the no-height alternative with default/species fallbacks.
     """
     if dbh_cm <= 0 or wood_density <= 0:
         logger.warning("Invalid input: DBH=%.2f, density=%.4f → AGB=0", dbh_cm, wood_density)
         return 0.0
 
-    a = coefficients.a if coefficients else CHAVE_A
-    b = coefficients.b if coefficients else CHAVE_B
+    sci_name = coefficients.species if coefficients else None
 
-    # Check for Ketterings et al 2001 (Secondary forests Indonesia)
-    # AGB = a * wood_density * (dbh_cm ** b)
-    if coefficients and coefficients.equation_form == "ketterings_2001":
-        agb = a * wood_density * (dbh_cm ** b)
+    # ── Palms (Monocots) Cylindrical Model ──
+    if is_palm:
+        if height_m is None or height_m <= 0:
+            # Estimate height first using palm-specific/fallback models
+            h_a = coefficients.height_model_a if coefficients else None
+            h_b = coefficients.height_model_b if coefficients else None
+            h_c = coefficients.height_model_c if coefficients else None
+            h_form = coefficients.height_model_form if coefficients else "power"
+            height_m = estimate_height(dbh_cm, h_a, h_b, h_c, h_form)
+
+        # Cylindrical biomass formula for palm (no taper)
+        # Volume = (pi * D^2 / 40000) * H m3
+        # Biomass = Volume * wood_density * 1000 kg = 0.07854 * wood_density * D^2 * H kg
+        agb = 0.07854 * wood_density * (dbh_cm ** 2) * height_m
         if is_urban:
             agb *= URBAN_ADJUSTMENT
         return max(agb, 0.0)
 
+    # ── Non-palms (Dicots) ──
+    a = coefficients.a if coefficients else CHAVE_A
+    b = coefficients.b if coefficients else CHAVE_B
+
     # Resolve height
     if height_m is None or height_m <= 0:
-        # Try to estimate height from coefficients
         h_a = coefficients.height_model_a if coefficients else None
         h_b = coefficients.height_model_b if coefficients else None
         h_c = coefficients.height_model_c if coefficients else None
@@ -248,6 +298,12 @@ def calculate_agb(
 
         if h_a is not None and h_b is not None:
             height_m = estimate_height(dbh_cm, h_a, h_b, h_c, h_form)
+            # Having resolved height, use primary equation
+            if coefficients and coefficients.equation_form == "ketterings_2001":
+                agb_base = a * wood_density * (dbh_cm ** b)
+            else:
+                combined = wood_density * (dbh_cm ** 2) * height_m
+                agb_base = a * (combined ** b)
         else:
             # Use no-height equation
             ln_dbh = math.log(dbh_cm)
@@ -258,21 +314,48 @@ def calculate_agb(
                 + CHAVE_NOHGT_B3 * ln_dbh
                 + CHAVE_NOHGT_B4 * (ln_dbh ** 2)
             )
-            agb = math.exp(ln_agb)
+            agb_base = math.exp(ln_agb)
+    else:
+        # Primary equation with height
+        if coefficients and coefficients.equation_form == "ketterings_2001":
+            agb_base = a * wood_density * (dbh_cm ** b)
+        else:
+            combined = wood_density * (dbh_cm ** 2) * height_m
+            agb_base = a * (combined ** b)
 
-            if is_urban:
-                agb *= URBAN_ADJUSTMENT
+    # Separate Woody and Foliage components from baseline AGB
+    woody_base = agb_base * (1.0 - DEFAULT_FOLIAGE_FRACTION)
 
-            return max(agb, 0.0)
+    # Resolve morphology properties
+    crown_modifier = coefficients.crown_modifier if coefficients else DEFAULT_CROWN_MODIFIER
+    species_lai = coefficients.species_lai if coefficients else DEFAULT_SPECIES_LAI
 
-    # Primary equation with height
-    combined = wood_density * (dbh_cm ** 2) * height_m
-    agb = a * (combined ** b)
+    trunk_mult = get_trunk_multiplier(sci_name)
+    crown_shape_mult = get_crown_shape_multiplier(crown_modifier)
+
+    # Adjust woody component
+    woody_adjusted = woody_base * trunk_mult * crown_shape_mult
+
+    # Explicitly calculate foliage biomass based on morphology
+    # 1. Crown width CW = 0.6 + crown_modifier * DBH
+    # 2. Crown area CA = pi * (CW/2)^2
+    # 3. Leaf area LA = CA * LAI (species_lai)
+    # 4. Foliage biomass = LA * SLW
+    cw = 0.6 + crown_modifier * dbh_cm
+    cw = min(cw, CW_MAX_M)
+    ca = math.pi * (cw / 2.0) ** 2
+    la = ca * species_lai
+    slw = get_leaf_shape_slw(sci_name, is_palm=False)
+    foliage_biomass = la * slw
+
+    # Recombine components
+    agb = woody_adjusted + foliage_biomass
 
     if is_urban:
         agb *= URBAN_ADJUSTMENT
 
     return max(agb, 0.0)
+
 
 
 # ──────────────────────────────────────────────────────────────────────
@@ -286,33 +369,15 @@ def calculate_biomass(
     is_urban: bool = True,
     condition: str = "good",
     is_palm: bool = False,
+    lai: float = DEFAULT_LAI,
+    rain_events: int = ANNUAL_RAIN_EVENTS,
+    pollution_multiplier: float = 1.0,
 ) -> BiomassResult:
     """Calculate full biomass and carbon storage for one tree.
 
     This is the primary entry point for single-tree calculations.
     It wraps ``calculate_agb()`` and adds belowground biomass,
     condition adjustment, and carbon conversion.
-
-    Parameters
-    ----------
-    dbh_cm : float
-        Diameter at breast height in cm.
-    height_m : float or None
-        Total tree height.  None triggers estimation or no-height equation.
-    coefficients : AllometricCoefficients
-        Resolved from ``database.get_coefficients()``.
-    is_urban : bool
-        Apply urban open-grown adjustment (default True).
-    condition : str
-        Tree condition class: 'excellent', 'good', 'fair', 'poor',
-        'critical', or 'dead'.
-    is_palm : bool
-        If True, uses 0.41 carbon fraction instead of 0.50.
-
-    Returns
-    -------
-    BiomassResult
-        Complete biomass and carbon breakdown.
     """
     # Condition multiplier
     cond_mult = CONDITION_MULTIPLIERS.get(condition.lower().strip(), 0.80)
@@ -324,6 +389,7 @@ def calculate_biomass(
         wood_density=coefficients.wood_density,
         coefficients=coefficients,
         is_urban=is_urban,
+        is_palm=is_palm,
     )
     agb *= cond_mult
 
@@ -341,28 +407,7 @@ def calculate_biomass(
     CO2_RATIO = 3.6663
     co2_storage = carbon * CO2_RATIO
 
-    # Annual Sequestration/Oxygen/Equivalencies proxy (using annual increment)
-    # Estimate annual growth 
-    delta_d = 0.5 
-    c_next = calculate_carbon_storage(dbh_cm + delta_d, height_m, coefficients, is_urban, is_palm)
-    seq = max(c_next - carbon, 0.0)
-    
-    co2_seq = seq * CO2_RATIO
-    o2_prod = seq * 2.6667
-    epa_liters = (co2_seq / 1000.0) * 112.18 * 3.78541
-    epa_km = (co2_seq / 1000.0) * 2564.0 * 1.60934
-
-    # Pollution/Stormwater
-    pollution = estimate_pollution_removal(dbh_cm)
-    sw = estimate_stormwater_interception(dbh_cm)
-
-    # Determine equation used
-    if height_m is not None and height_m > 0:
-        eq_used = f"{coefficients.equation_form}_with_height"
-    else:
-        eq_used = f"{coefficients.equation_form}_no_height"
-
-    # Resolve displayed height
+    # Resolve displayed height (needed for next year height estimation)
     display_height = height_m
     if display_height is None or display_height <= 0:
         display_height = estimate_height(
@@ -372,6 +417,42 @@ def calculate_biomass(
             coefficients.height_model_c,
             coefficients.height_model_form,
         )
+
+    # Annual Sequestration/Oxygen/Equivalencies proxy (using annual increment)
+    if is_palm:
+        delta_d = 0.0
+        palm_h_growth = coefficients.palm_height_growth_m if hasattr(coefficients, "palm_height_growth_m") else DEFAULT_PALM_HEIGHT_GROWTH_M
+        height_next = display_height + palm_h_growth
+    else:
+        delta_d = coefficients.true_growth_rate_cm if hasattr(coefficients, "true_growth_rate_cm") else DEFAULT_TRUE_GROWTH_RATE_CM
+        height_next = None
+        if display_height is not None and display_height > 0:
+            height_next = display_height * ((dbh_cm + delta_d) / dbh_cm) ** 0.5
+
+    c_next = calculate_carbon_storage(dbh_cm + delta_d, height_next, coefficients, is_urban, is_palm)
+    seq = max(c_next - carbon, 0.0)
+    
+    co2_seq = seq * CO2_RATIO
+    o2_prod = seq * 2.6667
+    epa_liters = (co2_seq / 1000.0) * 112.18 * 3.78541
+    epa_km = (co2_seq / 1000.0) * 2564.0 * 1.60934
+
+    # Resolve LAI scaled by site profile selection
+    site_lai_factor = lai / DEFAULT_LAI
+    spec_lai = coefficients.species_lai if hasattr(coefficients, "species_lai") else DEFAULT_SPECIES_LAI
+    resolved_lai = spec_lai * site_lai_factor
+    
+    crown_modifier = coefficients.crown_modifier if hasattr(coefficients, "crown_modifier") else DEFAULT_CROWN_MODIFIER
+
+    # Pollution/Stormwater
+    pollution = estimate_pollution_removal(dbh_cm, resolved_lai, pollution_multiplier, crown_modifier)
+    sw = estimate_stormwater_interception(dbh_cm, resolved_lai, rain_events, crown_modifier)
+
+    # Determine equation used
+    if height_m is not None and height_m > 0:
+        eq_used = f"{coefficients.equation_form}_with_height"
+    else:
+        eq_used = f"{coefficients.equation_form}_no_height"
 
     return BiomassResult(
         dbh_cm=dbh_cm,
@@ -490,84 +571,42 @@ def calculate_sequestration(
 # 5. STORMWATER INTERCEPTION
 # ──────────────────────────────────────────────────────────────────────
 
-def estimate_crown_width(dbh_cm: float) -> float:
+def estimate_crown_width(dbh_cm: float, crown_modifier: Optional[float] = None) -> float:
     """Estimate crown width (m) from DBH using a tropical urban proxy.
 
-    CW = CW_INTERCEPT + CW_SLOPE × DBH, capped at CW_MAX.
-
-    Parameters
-    ----------
-    dbh_cm : float
-        Diameter at breast height in cm.
-
-    Returns
-    -------
-    float
-        Estimated crown width in metres.
+    CW = CW_INTERCEPT + crown_modifier × DBH, capped at CW_MAX.
     """
-    cw = CW_INTERCEPT + CW_SLOPE * max(dbh_cm, 0.0)
+    cw_slope = crown_modifier if crown_modifier is not None else CW_SLOPE
+    cw = CW_INTERCEPT + cw_slope * max(dbh_cm, 0.0)
     return min(cw, CW_MAX_M)
 
 
-def estimate_crown_area(dbh_cm: float) -> float:
-    """Estimate crown projection area (m²) from DBH.
-
-    Returns
-    -------
-    float
-        Crown projection area in m².
-    """
-    cw = estimate_crown_width(dbh_cm)
+def estimate_crown_area(dbh_cm: float, crown_modifier: Optional[float] = None) -> float:
+    """Estimate crown projection area (m²) from DBH."""
+    cw = estimate_crown_width(dbh_cm, crown_modifier)
     return math.pi * (cw / 2.0) ** 2
 
 
-def estimate_leaf_area(dbh_cm: float, lai: float = DEFAULT_LAI) -> float:
+def estimate_leaf_area(dbh_cm: float, lai: float = DEFAULT_LAI, crown_modifier: Optional[float] = None) -> float:
     """Estimate total one-sided leaf area (m²).
 
     Leaf Area = Crown Area × LAI
-
-    Parameters
-    ----------
-    dbh_cm : float
-        Diameter at breast height in cm.
-    lai : float
-        Leaf Area Index (default: 5.0 for tropical broadleaf).
-
-    Returns
-    -------
-    float
-        Total leaf area in m².
     """
-    return estimate_crown_area(dbh_cm) * lai
+    return estimate_crown_area(dbh_cm, crown_modifier) * lai
 
 
 def estimate_stormwater_interception(
     dbh_cm: float,
     lai: float = DEFAULT_LAI,
     rain_events: int = ANNUAL_RAIN_EVENTS,
+    crown_modifier: Optional[float] = None,
 ) -> float:
     """Estimate annual avoided stormwater runoff (litres).
 
     Uses the simplified canopy storage proxy:
         Annual Interception = Crown Area × LAI × S_L × N_events × 1000
-
-    The ×1000 converts m³ to litres.
-
-    Parameters
-    ----------
-    dbh_cm : float
-        Diameter at breast height in cm.
-    lai : float
-        Leaf Area Index.
-    rain_events : int
-        Number of rain events per year.
-
-    Returns
-    -------
-    float
-        Estimated annual stormwater interception in litres.
     """
-    crown_area = estimate_crown_area(dbh_cm)
+    crown_area = estimate_crown_area(dbh_cm, crown_modifier)
     # Max canopy storage depth per event (m)
     storage_depth = lai * SPECIFIC_LEAF_STORAGE_M
     # Annual volume in m³
@@ -581,6 +620,7 @@ def estimate_stormwater_from_hourly(
     hourly_rain_mm: List[float],
     lai: float = DEFAULT_LAI,
     min_event_mm: float = 1.0,
+    crown_modifier: Optional[float] = None,
 ) -> float:
     """Estimate annual stormwater interception from hourly rainfall data.
 
@@ -590,25 +630,8 @@ def estimate_stormwater_from_hourly(
 
     Events are defined as contiguous hours with rainfall >= min_event_mm,
     separated by at least 6 dry hours (allowing canopy to dry).
-
-    Parameters
-    ----------
-    dbh_cm : float
-        Diameter at breast height in cm.
-    hourly_rain_mm : list of float
-        Hourly precipitation depths in mm for one year (8760 values ideal,
-        but any length works).
-    lai : float
-        Leaf Area Index.
-    min_event_mm : float
-        Minimum hourly rainfall to consider as "wet" (default: 1.0 mm).
-
-    Returns
-    -------
-    float
-        Estimated annual stormwater interception in litres.
     """
-    crown_area = estimate_crown_area(dbh_cm)
+    crown_area = estimate_crown_area(dbh_cm, crown_modifier)
     # Max canopy storage capacity per event (m³)
     max_storage_m3 = crown_area * lai * SPECIFIC_LEAF_STORAGE_M
 
@@ -737,29 +760,13 @@ def estimate_pollution_removal(
     dbh_cm: float,
     lai: float = DEFAULT_LAI,
     pollution_multiplier: float = 1.0,
+    crown_modifier: Optional[float] = None,
 ) -> PollutionResult:
     """Estimate annual air pollution removal (grams) using area-based proxy.
 
     Pollutant removed = Leaf Area (m²) × removal rate (g/m²/yr) × multiplier
-
-    The pollution_multiplier scales removal rates to reflect ambient
-    pollution concentrations at the site.  Higher concentrations mean
-    more pollutant available for deposition.
-
-    Parameters
-    ----------
-    dbh_cm : float
-        Diameter at breast height in cm.
-    lai : float
-        Leaf Area Index.
-    pollution_multiplier : float
-        Site-specific scalar on base removal rates (1.0 = literature default).
-
-    Returns
-    -------
-    PollutionResult
     """
-    la = estimate_leaf_area(dbh_cm, lai)
+    la = estimate_leaf_area(dbh_cm, lai, crown_modifier)
 
     pm25 = la * POLLUTION_RATES.pm25 * pollution_multiplier
     no2 = la * POLLUTION_RATES.no2 * pollution_multiplier
@@ -821,7 +828,12 @@ def forecast_growth(
     -------
     list of ForecastRow
     """
-    delta_d = GROWTH_RATE_MAP.get(growth_rate.lower().strip(), GROWTH_RATE_MAP["moderate"])
+    if is_palm:
+        delta_d = 0.0
+        delta_h = coefficients.palm_height_growth_m if hasattr(coefficients, "palm_height_growth_m") else DEFAULT_PALM_HEIGHT_GROWTH_M
+    else:
+        delta_d = coefficients.true_growth_rate_cm if hasattr(coefficients, "true_growth_rate_cm") else DEFAULT_TRUE_GROWTH_RATE_CM
+        delta_h = 0.0
 
     # Resolve starting height
     if initial_height_m is None or initial_height_m <= 0:
@@ -836,20 +848,30 @@ def forecast_growth(
     rows: List[ForecastRow] = []
     prev_carbon = 0.0
 
-    for yr in range(years + 1):
-        dbh = initial_dbh_cm + delta_d * yr
+    # Resolve LAI scaled by site profile selection
+    site_lai_factor = lai / DEFAULT_LAI
+    spec_lai = coefficients.species_lai if hasattr(coefficients, "species_lai") else DEFAULT_SPECIES_LAI
+    resolved_lai = spec_lai * site_lai_factor
+    
+    crown_modifier = coefficients.crown_modifier if hasattr(coefficients, "crown_modifier") else DEFAULT_CROWN_MODIFIER
 
-        # Height grows proportionally (power 0.5 — decelerating)
-        if initial_dbh_cm > 0:
-            height = initial_height_m * (dbh / initial_dbh_cm) ** 0.5
+    for yr in range(years + 1):
+        if is_palm:
+            dbh = initial_dbh_cm
+            height = initial_height_m + delta_h * yr
         else:
-            height = estimate_height(
-                dbh,
-                coefficients.height_model_a,
-                coefficients.height_model_b,
-                coefficients.height_model_c,
-                coefficients.height_model_form,
-            )
+            dbh = initial_dbh_cm + delta_d * yr
+            # Height grows proportionally (power 0.5 — decelerating)
+            if initial_dbh_cm > 0:
+                height = initial_height_m * (dbh / initial_dbh_cm) ** 0.5
+            else:
+                height = estimate_height(
+                    dbh,
+                    coefficients.height_model_a,
+                    coefficients.height_model_b,
+                    coefficients.height_model_c,
+                    coefficients.height_model_form,
+                )
 
         # Biomass and carbon
         bio = calculate_biomass(
@@ -858,6 +880,9 @@ def forecast_growth(
             coefficients=coefficients,
             is_urban=is_urban,
             is_palm=is_palm,
+            lai=lai,
+            rain_events=rain_events,
+            pollution_multiplier=pollution_multiplier,
         )
 
         # Sequestration (delta from previous year)
@@ -865,17 +890,18 @@ def forecast_growth(
 
         # Cap check
         if prev_carbon >= CARBON_STORAGE_CAP:
-            max_seq = SEQUESTRATION_RATE_CAP * delta_d
+            step_size = delta_h if is_palm else delta_d
+            max_seq = SEQUESTRATION_RATE_CAP * (step_size if step_size > 0 else 1.0)
             seq = min(seq, max_seq)
 
         seq = max(seq, 0.0)
         prev_carbon = bio.carbon_storage_kg
 
         # Stormwater
-        stormwater = estimate_stormwater_interception(dbh, lai, rain_events)
+        stormwater = estimate_stormwater_interception(dbh, resolved_lai, rain_events, crown_modifier)
 
         # Pollution
-        pollution = estimate_pollution_removal(dbh, lai, pollution_multiplier)
+        pollution = estimate_pollution_removal(dbh, resolved_lai, pollution_multiplier, crown_modifier)
 
         # Convert seq back to CO2, O2, EPA
         co2_seq = seq * 3.6663

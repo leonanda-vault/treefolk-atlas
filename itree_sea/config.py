@@ -218,6 +218,74 @@ CONDITION_MULTIPLIERS: Dict[str, float] = {
     "dead": 0.00,
 }
 
+# ──────────────────────────────────────────────────────────────────────
+# 9B. TREE MORPHOLOGY MULTIPLIERS & DEFAULTS
+# ──────────────────────────────────────────────────────────────────────
+
+# Default portion of total aboveground biomass attributed to foliage in standard trees
+# Source: Literature default (e.g. i-Tree Eco foliage ratio)
+DEFAULT_FOLIAGE_FRACTION: float = 0.03
+
+# Trunk type multipliers on woody biomass component
+TRUNK_TYPE_MULTIPLIERS: Dict[str, float] = {
+    "standard_taper": 1.00,
+    "buttressed": 1.15,
+    "multi_stemmed": 0.85,
+    "cylindrical": 1.25,
+}
+
+# Crown shape multipliers on branch/woody biomass component
+CROWN_SHAPE_MULTIPLIERS: Dict[str, float] = {
+    "spherical": 1.00,
+    "spreading": 1.15,
+    "conical": 0.90,
+    "columnar": 0.80,
+    "weeping": 0.85,
+}
+
+# Specific Leaf Weight (kg of dry leaf biomass per m2 of leaf area)
+# Sources: Nowak (1996), i-Tree Eco defaults
+LEAF_SHAPE_SLW: Dict[str, float] = {
+    "broadleaf_simple": 0.12,
+    "broadleaf_compound": 0.09,
+    "needle": 0.22,
+    "palm_fan": 0.32,
+}
+
+# Leaf Area Index values representing canopy leaf density
+LEAF_DENSITY_LAI: Dict[str, float] = {
+    "dense": 6.5,
+    "medium": 5.0,
+    "sparse": 3.0,
+    "very_sparse": 1.5,
+}
+
+# Defaults fallback values
+DEFAULT_TRUNK_TYPE: str = "standard_taper"
+DEFAULT_CROWN_SHAPE: str = "spherical"
+DEFAULT_LEAF_SHAPE: str = "broadleaf_simple"
+DEFAULT_LEAF_DENSITY: str = "medium"
+
+DEFAULT_TRUE_GROWTH_RATE_CM: float = 0.90
+DEFAULT_PALM_HEIGHT_GROWTH_M: float = 0.30
+DEFAULT_CROWN_MODIFIER: float = 0.15
+DEFAULT_SPECIES_LAI: float = 5.0
+
+# Mapping from categorical growth description to numeric fallbacks (non-palms)
+CATEGORICAL_GROWTH_MAP: Dict[str, float] = {
+    "slow": 0.40,
+    "moderate": 0.90,
+    "fast": 1.50,
+}
+
+# Mapping from categorical growth description to annual height growth fallbacks (palms)
+CATEGORICAL_PALM_HEIGHT_MAP: Dict[str, float] = {
+    "slow": 0.15,
+    "moderate": 0.30,
+    "fast": 0.60,
+}
+
+
 
 # ──────────────────────────────────────────────────────────────────────
 # 10. SITE PROFILES  (bundled environmental context)

@@ -114,6 +114,10 @@ def calculate_single_tree_schedule(
     rain_events: int = ANNUAL_RAIN_EVENTS,
     pollution_multiplier: float = 1.0,
     db_path: Optional[str] = None,
+    true_growth_rate_cm: Optional[float] = None,
+    palm_height_growth_m: Optional[float] = None,
+    crown_modifier: Optional[float] = None,
+    species_lai: Optional[float] = None,
 ) -> List[Dict[str, Any]]:
     """Calculate the multi-year forecast schedule for a single simulated tree."""
     # Resolve species details
@@ -124,6 +128,16 @@ def calculate_single_tree_schedule(
     # Resolve coefficients
     genus = species.split()[0] if species else ""
     coeffs = get_coefficients(scientific_name=species, genus=genus, db_path=db_path)
+
+    # Apply morphology overrides if provided
+    if true_growth_rate_cm is not None:
+        coeffs.true_growth_rate_cm = true_growth_rate_cm
+    if palm_height_growth_m is not None:
+        coeffs.palm_height_growth_m = palm_height_growth_m
+    if crown_modifier is not None:
+        coeffs.crown_modifier = crown_modifier
+    if species_lai is not None:
+        coeffs.species_lai = species_lai
 
     # 2. Multi-year Forecast
     forecast = forecast_growth(
@@ -233,6 +247,10 @@ def compute_simulation(
             rain_events=rain_events,
             pollution_multiplier=pollution_multiplier,
             db_path=db_path,
+            true_growth_rate_cm=p.get("true_growth_rate_cm"),
+            palm_height_growth_m=p.get("palm_height_growth_m"),
+            crown_modifier=p.get("crown_modifier"),
+            species_lai=p.get("species_lai"),
         )
         
         # Add spatial coordinates and identifiers to yearly rows

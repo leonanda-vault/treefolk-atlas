@@ -79,6 +79,54 @@ AGB = a × ρ × D^b
 
 > **Source:** Ketterings, Q.M., et al. (2001). "Reducing uncertainty in the use of allometric biomass equations for predicting above-ground tree biomass in mixed secondary forests." *Forest Ecology and Management*, 146(1-3), 199-209.
 
+#### Palm cylindrical stem model (monocots)
+
+For palm species (monocots where `is_palm = 1`), standard dicot allometric equations (like Chave 2014) are biologically inappropriate because palm trunks are cylindrical, do not experience secondary lateral growth (DBH expansion) after establishment, and do not taper like standard dicots.
+
+Aboveground dry-weight biomass (AGB) is calculated using a cylindrical stem volume formula:
+
+$$AGB_{\text{palm}} = 0.07854 \times \rho \times D^2 \times H$$
+
+Where:
+- $AGB$: Aboveground dry-weight biomass (kg)
+- $\rho$: Wood specific gravity / specific gravity (g/cm³)
+- $D$: Diameter at breast height (cm)
+- $H$: Tree height (m)
+
+*Derivation:*
+The volume of a cylinder is $V = \pi \times (\frac{D}{200})^2 \times H = \frac{\pi}{40000} \times D^2 \times H$ (m³). Converting volume to dry weight using density $\rho \times 1000$ (kg/m³) gives:
+$$AGB = \frac{\pi}{40000} \times 1000 \times \rho \times D^2 \times H \approx 0.07854 \times \rho \times D^2 \times H$$
+
+> **Sources:**
+> - Frangi, J. L., & Lugo, A. E. (1985). "Ecosystem dynamics of a subtropical floodplain forest." *Ecological Monographs*, 55(3), 351-369.
+> - Goodman, R. C., et al. (2013). "Amazon palm biomass templates." *Forest Ecology and Management*, 291, 230-237.
+> - Nowak, D. J. (2020). "i-Tree Eco Palm Biomass Estimation." USDA Forest Service.
+
+#### Morphology-driven Woody & Foliage model (dicots)
+
+For standard dicot trees, aboveground biomass is refined by separating woody biomass and foliage biomass components based on morphological properties:
+
+$$\text{AGB} = \text{Woody}_{\text{adjusted}} + \text{Foliage}$$
+
+Where:
+1. **Woody component:** Separated from standard Chave baseline biomass using the standard foliage fraction:
+   $$\text{Woody}_{\text{base}} = \text{AGB}_{\text{Chave\_Base}} \times (1 - \text{DEFAULT\_FOLIAGE\_FRACTION})$$
+   $$\text{Woody}_{\text{adjusted}} = \text{Woody}_{\text{base}} \times f_{\text{trunk}} \times f_{\text{crown}}$$
+   - $f_{\text{trunk}}$: Trunk type multiplier (e.g. Standard = `1.0`, Buttressed = `1.15`, Multi-stemmed = `0.85`).
+   - $f_{\text{crown}}$: Crown shape multiplier based on the crown modifier $k_{cw}$ (Columnar = `0.80`, Conical = `0.90`, Spherical = `1.00`, Spreading = `1.15`).
+
+2. **Foliage component:** Explicitly computed based on species-specific Leaf Area Index (LAI) and leaf shape Specific Leaf Weight (SLW):
+   $$\text{Foliage} = \text{Crown\_Area} \times \text{LAI}_{\text{species}} \times \text{SLW}$$
+   - $\text{Crown\_Area} = \pi \times \left(\frac{CW}{2}\right)^2$ (m²)
+   - $CW = 0.6 + k_{cw} \times DBH$ (m)
+   - $\text{LAI}_{\text{species}}$: Leaf Area Index of the species (default = `5.0`).
+   - $\text{SLW}$: Specific Leaf Weight (kg/m²), determined by leaf shape (Simple = `0.12`, Compound = `0.09`, Needle = `0.22`, Palm Fan = `0.32`).
+
+> **Sources:**
+> - Nowak, D. J. (1996). "Estimating leaf area and leaf biomass of individual open-grown deciduous trees." *Forest Science*, 42(3), 270-275.
+> - Peper, P. J., & McPherson, E. G. (2003). "Evaluation of four methods for estimating leaf area of isolated trees." *Urban Forestry & Urban Greening*, 2(1), 19-29.
+> - Asner, G. P., et al. (2003). "Global synthesis of leaf area index observations." *Global Ecology and Biogeography*, 12(3), 191-205.
+
 #### Tropical climate-specific equations (Chave et al. 2005)
 
 i-Tree Eco v6.0.22 introduced climate-specific tropical equations based on Chave et al. (2005). Three variants exist:
@@ -415,16 +463,29 @@ When looking up allometric coefficients, the engine follows a 3-tier fallback:
 
 Users can customize the forecast horizon from **1 to 100 years**, allowing for both short-term tracking and long-term ecosystem service modeling. The engine tracks the absolute growth (ΔDBH and ΔHeight) alongside the derived benefits.
 
-Starting from a baseline DBH (default 5 cm for new trees, measured for existing):
+Starting from a baseline DBH and height, growth projections are split by tree type:
 
+**For Dicot Trees (Standard Deciduous/Evergreen):**
 ```
-For each year 0..N:
-    DBH(t) = DBH(0) + ΔD × t
-    Height(t) = H(0) × [DBH(t) / DBH(0)]^0.5
-    Biomass(t) = calculate_biomass(DBH(t), H(t))
+For each year 1..N:
+    DBH(t) = DBH(t-1) + true_growth_rate_cm
+    Height(t) = Height(0) * [DBH(t) / DBH(0)]^0.5
+    Biomass(t) = calculate_biomass(DBH(t), Height(t), coefficients, is_palm=False)
+```
+
+**For Monocot Trees (Palms):**
+```
+For each year 1..N:
+    DBH(t) = DBH(0)   (constant stem thickness)
+    Height(t) = Height(t-1) + palm_height_growth_m
+    Biomass(t) = calculate_biomass(DBH(t), Height(t), coefficients, is_palm=True)
+```
+
+For all trees, ecosystem services are computed dynamically at each time step `t` using:
+```
     Sequestration(t) = Carbon(t) - Carbon(t-1)
-    Stormwater(t) = interception_proxy(DBH(t))
-    Pollution(t) = removal_proxy(DBH(t))
+    Stormwater(t) = estimate_stormwater_interception(DBH(t), resolved_lai, rain_events, crown_modifier)
+    Pollution(t) = estimate_pollution_removal(DBH(t), resolved_lai, pollution_multiplier, crown_modifier)
 ```
 
 ### 8.2 Height estimation and growth model

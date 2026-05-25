@@ -570,7 +570,7 @@ if st.session_state.schedule is None:
         _cur = _conn.cursor()
         _cur.execute("SELECT COUNT(*) FROM species_lookup")
         species_count = _cur.fetchone()[0]
-        _cur.execute("SELECT scientific_name, common_name, family, growth_rate FROM species_lookup ORDER BY scientific_name")
+        _cur.execute("SELECT scientific_name, common_name, family, growth_rate, true_growth_rate_cm, palm_height_growth_m, crown_modifier, species_lai FROM species_lookup ORDER BY scientific_name")
         all_species = _cur.fetchall()
         _conn.close()
     except Exception:
@@ -579,7 +579,11 @@ if st.session_state.schedule is None:
 
     with st.expander(t("species_db_title", n=species_count), expanded=False):
         if all_species:
-            cols = ["Scientific Name", "Common Name", "Family", "Growth Rate"] if st.session_state.lang == "English" else ["Nama Ilmiah", "Nama Umum", "Famili", "Laju Pertumbuhan"]
+            cols = (
+                ["Scientific Name", "Common Name", "Family", "Growth Rate", "Growth (cm/yr)", "Palm H. Growth (m/yr)", "Crown Modifier", "Species LAI"] 
+                if st.session_state.lang == "English" 
+                else ["Nama Ilmiah", "Nama Umum", "Famili", "Laju Pertumbuhan", "Pertumbuhan (cm/thn)", "Pertumbuhan T. Palem (m/thn)", "Pengali Tajuk", "LAI Spesies"]
+            )
             sp_df = pd.DataFrame(all_species, columns=cols)
             st.dataframe(sp_df, use_container_width=True, height=300)
         else:
@@ -1381,6 +1385,16 @@ with tab3:
             cond_display = st.selectbox(t("tree_condition"), cond_options, index=1)
             cond = cond_map[cond_display]
             
+            with st.expander(t("morphology_overrides_expander")):
+                st.caption(t("morphology_overrides_caption"))
+                col_grow, col_palm_h = st.columns(2)
+                custom_grow = col_grow.number_input(t("custom_growth_label"), min_value=0.0, max_value=10.0, value=0.0, step=0.1)
+                custom_palm_h = col_palm_h.number_input(t("custom_palm_h_label"), min_value=0.0, max_value=5.0, value=0.0, step=0.05)
+                
+                col_cw, col_lai = st.columns(2)
+                custom_cw = col_cw.number_input(t("custom_crown_modifier_label"), min_value=0.0, max_value=1.0, value=0.0, step=0.01)
+                custom_lai = col_lai.number_input(t("custom_lai_label"), min_value=0.0, max_value=15.0, value=0.0, step=0.5)
+            
             submit_add = st.form_submit_button(t("plant_tree_btn"))
             if submit_add:
                 # Assign new tree_id
@@ -1392,7 +1406,11 @@ with tab3:
                     "height_m": h if h > 0 else None,
                     "x": x_coord,
                     "y": y_coord,
-                    "condition": cond.lower()
+                    "condition": cond.lower(),
+                    "true_growth_rate_cm": custom_grow if custom_grow > 0.0 else None,
+                    "palm_height_growth_m": custom_palm_h if custom_palm_h > 0.0 else None,
+                    "crown_modifier": custom_cw if custom_cw > 0.0 else None,
+                    "species_lai": custom_lai if custom_lai > 0.0 else None,
                 })
                 st.success(t("successfully_planted", sp=sp))
                 st.rerun()
@@ -1468,8 +1486,8 @@ with tab3:
         if st.session_state.manual_trees:
             st.markdown(t("manually_planted"))
             plant_df = pd.DataFrame(st.session_state.manual_trees)
-            plant_df_display = plant_df[["tree_id", "species", "dbh_cm", "height_m", "x", "y", "condition"]].copy()
-            plant_df_display.columns = [
+            cols_to_show = ["tree_id", "species", "dbh_cm", "height_m", "x", "y", "condition"]
+            cols_labels = [
                 t("col_tree_id"),
                 t("col_species"),
                 t("dbh_label"),
@@ -1478,6 +1496,18 @@ with tab3:
                 t("col_y"),
                 t("col_condition")
             ]
+            for extra_col, extra_label in [
+                ("true_growth_rate_cm", t("custom_growth_label")),
+                ("palm_height_growth_m", t("custom_palm_h_label")),
+                ("crown_modifier", t("custom_crown_modifier_label")),
+                ("species_lai", t("custom_lai_label"))
+            ]:
+                if extra_col in plant_df.columns:
+                    cols_to_show.append(extra_col)
+                    cols_labels.append(extra_label)
+            
+            plant_df_display = plant_df[cols_to_show].copy()
+            plant_df_display.columns = cols_labels
             st.dataframe(plant_df_display, use_container_width=True, hide_index=True)
             
             tree_to_delete = st.selectbox(
