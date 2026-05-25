@@ -221,7 +221,8 @@ Annual gross sequestration is calculated as the change in carbon storage over on
 Sequestration = C_storage(DBH + ΔD) − C_storage(DBH)
 ```
 
-Where ΔD is the annual DBH increment:
+Where the annual growth increment is determined as follows:
+- **For Dicot Trees:** The engine prioritizes the continuous species-specific growth rate (`true_growth_rate_cm`) from the database (e.g., 1.62 cm/yr). If unavailable, it falls back to the categorical increments ($\Delta D$):
 
 | Growth rate | ΔD (cm/yr) | Source |
 |-------------|-----------|--------|
@@ -229,7 +230,9 @@ Where ΔD is the annual DBH increment:
 | Moderate | 1.00 | i-Tree Eco default |
 | Fast | 1.75 | Adapted for tropical fast-growers |
 
-> **Note:** i-Tree Eco uses field-measured growth rates when available. Our design-phase proxy assigns rates by species growth class from the database.
+- **For Monocot Trees (Palms):** DBH growth ($\Delta D$) is strictly $0.0\text{ cm/yr}$. Growth is height-based, incrementing height by `palm_height_growth_m` from the database (default $0.3\text{ m/yr}$ or $0.6\text{ m/yr}$ depending on species) at each step.
+
+> **Note:** i-Tree Eco uses field-measured growth rates when available. Our design-phase proxy uses continuous database rates (or categorical fallbacks if missing) to avoid the "cloned data" effect.
 
 ### 3.2 Large-tree cap
 
@@ -512,7 +515,7 @@ Over time, height grows as a function of the forecasted DBH, recalculating the h
 | AGB equation | Species-specific + Chave 2014 | Chave 2014 pantropical & Ketterings 2001 | Low — Adds regional specificity for Indonesia |
 | Wood density weighting | Post-hoc WD ratio | Direct ρ in equation | None — functionally equivalent |
 | Height | Field-measured | Weibull estimation (Feldpausch 2012) | Low — Weibull model accurately captures tropical height asymptotes |
-| Growth rate | Field/regional tables | Categorical (slow/mod/fast) | Low — appropriate for forecasting |
+| Growth rate | Field/regional tables | Continuous species-specific database rates (categorical fallback) | Low — appropriate for forecasting, avoids cloned outputs |
 | Urban adjustment | CLE-conditional (0.80) | Always 0.80 | Low — conservative |
 | Stormwater | Hourly water balance | Annual proxy + site profiles / hourly upload | Low — Advanced mode runs hourly event interception capping |
 | Pollution | Hourly deposition model | Annual proxy × site / hourly concentration multiplier | Low — Advanced mode scales removal rates using measured concentrations |

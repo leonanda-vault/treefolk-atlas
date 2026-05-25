@@ -129,7 +129,8 @@ Penyerapan kotor tahunan dihitung berdasarkan perubahan penyimpanan karbon selam
 
 $$\text{Penyerapan} = \text{C\_storage}(D + \Delta D) - \text{C\_storage}(D)$$
 
-Dimana $\Delta D$ adalah pertumbuhan DBH tahunan berdasarkan kelas pertumbuhan spesies:
+Di mana pertambahan pertumbuhan tahunan ditentukan sebagai berikut:
+- **Untuk Pohon Dikotil:** Mesin memprioritaskan laju pertumbuhan kontinu spesifik spesies (`true_growth_rate_cm`) dari basis data (misalnya, 1,62 cm/tahun). Jika tidak tersedia, sistem menggunakan fallback pertambahan berdasarkan kategori ($\Delta D$):
 
 | Kecepatan Tumbuh | $\Delta D$ (cm/tahun) | Keterangan |
 | :--- | :--- | :--- |
@@ -137,9 +138,13 @@ Dimana $\Delta D$ adalah pertumbuhan DBH tahunan berdasarkan kelas pertumbuhan s
 | Sedang | 1.00 | Standar default i-Tree Eco |
 | Cepat | 1.75 | Diadaptasi untuk spesies tropis tumbuh cepat |
 
+- **Untuk Pohon Monokotil (Palem):** Pertumbuhan DBH ($\Delta D$) adalah tepat $0,0\text{ cm/tahun}$. Pertumbuhannya didasarkan pada tinggi, dengan menambah tinggi sebesar `palm_height_growth_m` dari basis data (default $0,3\text{ m/tahun}$ atau $0,6\text{ m/tahun}$ tergantung spesies) pada setiap langkah.
+
+> **Catatan:** i-Tree Eco menggunakan laju pertumbuhan yang diukur di lapangan jika tersedia. Proksi fase desain kami menggunakan laju basis data kontinu (atau fallback kategori jika tidak ada) untuk menghindari efek duplikasi data (cloned data).
+
 ### 3.2 Batas Maksimum Pohon Besar
 
-Ketika penyimpanan karbon melebihi **7.500 kg**, laju penyerapan dibatasi maksimal **40 kg per cm pertumbuhan DBH** untuk mencegah estimasi yang tidak realistis pada pohon yang sangat besar.
+Ketika penyimpanan karbon melebihi **7.500 kg**, laju penyerapan dibatasi maksimal **40 kg per cm pertumbuhan DBH** (atau pertumbuhan tinggi pada palem) untuk mencegah estimasi yang tidak realistis pada pohon yang sangat besar.
 
 ---
 
@@ -386,7 +391,7 @@ Seiring waktu, tinggi tumbuh sebagai fungsi dari DBH yang diprakirakan, menghitu
 | Persamaan AGB | Spesifik spesies + Chave 2014 | Chave 2014 pantropis & Ketterings 2001 | Rendah — Menambahkan spesifik regional untuk Indonesia |
 | Pembobotan berat jenis kayu | Rasio WD pasca-proses | $\rho$ langsung dalam persamaan | Tidak ada — setara secara fungsional |
 | Tinggi pohon | Diukur di lapangan | Estimasi Weibull (Feldpausch 2012) | Rendah — Model Weibull menangkap asimtot tinggi tropis secara akurat |
-| Laju pertumbuhan | Tabel lapangan/regional | Kategoris (lambat/sedang/cepat) | Rendah — sesuai untuk prakiraan |
+| Laju pertumbuhan | Tabel lapangan/regional | Laju basis data kontinu spesifik spesies (fallback kategori) | Rendah — sesuai untuk prakiraan, menghindari hasil duplikat |
 | Penyesuaian perkotaan | Tergantung CLE (0.80) | Selalu 0.80 | Rendah — konservatif |
 | Air hujan | Keseimbangan air per jam | Proksi tahunan + profil lokasi / unggah data per jam | Rendah — Mode Lanjutan menjalankan pembatasan kapasitas intersepsi kejadian per jam |
 | Polusi udara | Model deposisi per jam | Proksi tahunan × pengali konsentrasi per jam/lokasi | Rendah — Mode Lanjutan menyesuaikan laju penyaringan dengan konsentrasi terukur |
