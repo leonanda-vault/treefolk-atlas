@@ -49,7 +49,7 @@ def ensure_database_is_ready():
         seed_from_csv()
         return
 
-    # Condition 2: File exists, but check if the species_lookup table is missing
+    # Condition 2: File exists, but check if the species_lookup table is missing or outdated
     try:
         with sqlite3.connect(DATABASE_PATH) as conn:
             cursor = conn.cursor()
@@ -58,6 +58,18 @@ def ensure_database_is_ready():
                 st.warning("Database tables missing. Re-initializing...")
                 init_db()
                 seed_from_csv()
+            else:
+                # Table exists, check if the new columns are present
+                cursor.execute("PRAGMA table_info(species_lookup);")
+                columns = [col[1] for col in cursor.fetchall()]
+                if "true_growth_rate_cm" not in columns:
+                    st.warning("Database schema is outdated. Re-initializing...")
+                    # Drop tables to recreate them with new DDL
+                    cursor.execute("DROP TABLE IF EXISTS species_lookup;")
+                    cursor.execute("DROP TABLE IF EXISTS allometric_coefficients;")
+                    conn.commit()
+                    init_db()
+                    seed_from_csv()
     except Exception as e:
         st.error(f"Database integrity check failed: {e}")
 
