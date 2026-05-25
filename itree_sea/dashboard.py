@@ -591,12 +591,70 @@ if st.session_state.schedule is None:
 
     with st.expander(t("species_db_title", n=species_count), expanded=False):
         if all_species:
+            formatted_species = []
+            for row in all_species:
+                sci_name, com_name, family, growth_rate, true_growth, palm_h_growth, crown_mod, species_lai = row
+                
+                # 1. Growth Rate (DBH)
+                if true_growth == 0.0:
+                    growth_desc = "0.0 (Palm - No DBH Growth)" if st.session_state.lang == "English" else "0.0 (Palem - Tanpa Pertumbuhan)"
+                else:
+                    rate_cat = "Slow" if true_growth < 0.5 else ("Moderate" if true_growth < 1.3 else "Fast")
+                    rate_cat_id = "Lambat" if true_growth < 0.5 else ("Sedang" if true_growth < 1.3 else "Cepat")
+                    growth_desc = f"{true_growth:.2f} ({rate_cat if st.session_state.lang == 'English' else rate_cat_id})"
+                    
+                # 2. Palm Height Growth
+                if palm_h_growth == 0.0:
+                    palm_h_desc = "N/A" if true_growth > 0.0 else ("0.0 (None)" if st.session_state.lang == "English" else "0.0 (Tidak ada)")
+                else:
+                    h_cat = "Slow" if palm_h_growth < 0.2 else ("Moderate" if palm_h_growth < 0.5 else "Fast")
+                    h_cat_id = "Lambat" if palm_h_growth < 0.2 else ("Sedang" if palm_h_growth < 0.5 else "Cepat")
+                    palm_h_desc = f"{palm_h_growth:.2f} ({h_cat if st.session_state.lang == 'English' else h_cat_id})"
+                    
+                # 3. Crown Modifier
+                if crown_mod <= 0.10:
+                    shape = "Columnar / Fastigiate" if st.session_state.lang == "English" else "Kolom / Tiang"
+                elif crown_mod <= 0.13:
+                    shape = "Conical / Pyramidal" if st.session_state.lang == "English" else "Kerucut"
+                elif crown_mod <= 0.20:
+                    shape = "Round / Oval" if st.session_state.lang == "English" else "Bulat / Oval"
+                else:
+                    shape = "Broad / Spreading / Umbrella" if st.session_state.lang == "English" else "Melebar / Payung"
+                crown_desc = f"{crown_mod:.2f} ({shape})"
+                
+                # 4. Species LAI
+                if species_lai >= 5.5:
+                    lai_type = "Dense Broadleaf" if st.session_state.lang == "English" else "Daun Lebar Lebat"
+                elif species_lai >= 4.0:
+                    lai_type = "Standard Broadleaf" if st.session_state.lang == "English" else "Daun Lebar Standar"
+                elif species_lai >= 3.0:
+                    lai_type = "Sparse / Fine" if st.session_state.lang == "English" else "Daun Jarang"
+                else:
+                    lai_type = "Very Sparse / Palm Fan" if st.session_state.lang == "English" else "Sangat Jarang / Palem"
+                lai_desc = f"{species_lai:.1f} ({lai_type})"
+                
+                # Class / Class Translation
+                growth_rate_trans = growth_rate.title() if st.session_state.lang == "English" else (
+                    "Lambat" if growth_rate == "slow" else ("Sedang" if growth_rate == "moderate" else "Cepat")
+                )
+                
+                formatted_species.append([
+                    sci_name,
+                    com_name,
+                    family,
+                    growth_rate_trans,
+                    growth_desc,
+                    palm_h_desc,
+                    crown_desc,
+                    lai_desc
+                ])
+
             cols = (
-                ["Scientific Name", "Common Name", "Family", "Growth Rate", "Growth (cm/yr)", "Palm H. Growth (m/yr)", "Crown Modifier", "Species LAI"] 
+                ["Scientific Name", "Common Name", "Family", "Growth Class", "Growth (cm/yr)", "Palm H. Growth (m/yr)", "Crown Modifier", "Species LAI"] 
                 if st.session_state.lang == "English" 
-                else ["Nama Ilmiah", "Nama Umum", "Famili", "Laju Pertumbuhan", "Pertumbuhan (cm/thn)", "Pertumbuhan T. Palem (m/thn)", "Pengali Tajuk", "LAI Spesies"]
+                else ["Nama Ilmiah", "Nama Umum", "Famili", "Kelas Tumbuh", "Pertumbuhan (cm/thn)", "Pertumbuhan T. Palem (m/thn)", "Pengali Tajuk", "LAI Spesies"]
             )
-            sp_df = pd.DataFrame(all_species, columns=cols)
+            sp_df = pd.DataFrame(formatted_species, columns=cols)
             st.dataframe(sp_df, use_container_width=True, height=300)
         else:
             st.info(t("db_not_init"))
