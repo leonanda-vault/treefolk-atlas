@@ -248,6 +248,7 @@ def calculate_agb(
     coefficients: Optional[AllometricCoefficients] = None,
     is_urban: bool = True,
     is_palm: bool = False,
+    lai: Optional[float] = None,
 ) -> float:
     """Calculate aboveground dry-weight biomass (kg).
 
@@ -328,7 +329,7 @@ def calculate_agb(
 
     # Resolve morphology properties
     crown_modifier = coefficients.crown_modifier if coefficients else DEFAULT_CROWN_MODIFIER
-    species_lai = coefficients.species_lai if coefficients else DEFAULT_SPECIES_LAI
+    resolved_lai = lai if lai is not None else (coefficients.species_lai if coefficients else DEFAULT_SPECIES_LAI)
 
     trunk_mult = get_trunk_multiplier(sci_name)
     crown_shape_mult = get_crown_shape_multiplier(crown_modifier)
@@ -339,12 +340,12 @@ def calculate_agb(
     # Explicitly calculate foliage biomass based on morphology
     # 1. Crown width CW = 0.6 + crown_modifier * DBH
     # 2. Crown area CA = pi * (CW/2)^2
-    # 3. Leaf area LA = CA * LAI (species_lai)
+    # 3. Leaf area LA = CA * LAI (resolved_lai)
     # 4. Foliage biomass = LA * SLW
     cw = 0.6 + crown_modifier * dbh_cm
     cw = min(cw, CW_MAX_M)
     ca = math.pi * (cw / 2.0) ** 2
-    la = ca * species_lai
+    la = ca * resolved_lai
     slw = get_leaf_shape_slw(sci_name, is_palm=False)
     foliage_biomass = la * slw
 
@@ -382,6 +383,11 @@ def calculate_biomass(
     # Condition multiplier
     cond_mult = CONDITION_MULTIPLIERS.get(condition.lower().strip(), 0.80)
 
+    # Resolve LAI scaled by site profile selection
+    site_lai_factor = lai / DEFAULT_LAI
+    spec_lai = coefficients.species_lai if hasattr(coefficients, "species_lai") else DEFAULT_SPECIES_LAI
+    resolved_lai = spec_lai * site_lai_factor
+
     # Aboveground biomass
     agb = calculate_agb(
         dbh_cm=dbh_cm,
@@ -390,6 +396,7 @@ def calculate_biomass(
         coefficients=coefficients,
         is_urban=is_urban,
         is_palm=is_palm,
+        lai=resolved_lai,
     )
     agb *= cond_mult
 
@@ -429,18 +436,13 @@ def calculate_biomass(
         if display_height is not None and display_height > 0:
             height_next = display_height * ((dbh_cm + delta_d) / dbh_cm) ** 0.5
 
-    c_next = calculate_carbon_storage(dbh_cm + delta_d, height_next, coefficients, is_urban, is_palm)
+    c_next = calculate_carbon_storage(dbh_cm + delta_d, height_next, coefficients, is_urban, is_palm, resolved_lai)
     seq = max(c_next - carbon, 0.0)
     
     co2_seq = seq * CO2_RATIO
     o2_prod = seq * 2.6667
     epa_liters = (co2_seq / 1000.0) * 112.18 * 3.78541
     epa_km = (co2_seq / 1000.0) * 2564.0 * 1.60934
-
-    # Resolve LAI scaled by site profile selection
-    site_lai_factor = lai / DEFAULT_LAI
-    spec_lai = coefficients.species_lai if hasattr(coefficients, "species_lai") else DEFAULT_SPECIES_LAI
-    resolved_lai = spec_lai * site_lai_factor
     
     crown_modifier = coefficients.crown_modifier if hasattr(coefficients, "crown_modifier") else DEFAULT_CROWN_MODIFIER
 
@@ -488,13 +490,14 @@ def calculate_carbon_storage(
     coefficients: AllometricCoefficients,
     is_urban: bool = True,
     is_palm: bool = False,
+    lai: Optional[float] = None,
 ) -> float:
     """Shorthand: return only the carbon storage (kg) for a given DBH.
 
     Used internally by the sequestration calculator.
     """
     # This simplified version uses the carbon fraction directly
-    agb = calculate_agb(dbh_cm, height_m, coefficients.wood_density, coefficients, is_urban)
+    agb = calculate_agb(dbh_cm, height_m, coefficients.wood_density, coefficients, is_urban, is_palm, lai)
     total = agb * (1.0 + ROOT_SHOOT_RATIO)
     carbon_frac = CARBON_FRACTION_PALM if is_palm else CARBON_FRACTION_GENERAL
     return total * carbon_frac
@@ -507,6 +510,7 @@ def calculate_sequestration(
     growth_rate: str = "moderate",
     is_urban: bool = True,
     is_palm: bool = False,
+    lai: float = DEFAULT_LAI,
 ) -> SequestrationResult:
     """Calculate annual gross carbon sequestration (delta-storage method).
 
@@ -529,30 +533,58 @@ def calculate_sequestration(
         Apply urban adjustment.
     is_palm : bool
         Use palm carbon fraction.
+    lai : float
+        Leaf Area Index.
 
     Returns
     -------
     SequestrationResult
     """
-    delta_d = GROWTH_RATE_MAP.get(growth_rate.lower().strip(), GROWTH_RATE_MAP["moderate"])
+    if is_palm:
+        delta_d = 0.0
+        delta_h = coefficients.palm_height_growth_m if hasattr(coefficients, "palm_height_growth_m") else DEFAULT_PALM_HEIGHT_GROWTH_M
+    else:
+        if hasattr(coefficients, "true_growth_rate_cm") and coefficients.true_growth_rate_cm is not None and coefficients.true_growth_rate_cm > 0:
+            delta_d = coefficients.true_growth_rate_cm
+        else:
+            delta_d = GROWTH_RATE_MAP.get(growth_rate.lower().strip(), GROWTH_RATE_MAP["moderate"])
+        delta_h = 0.0
 
-    c_now = calculate_carbon_storage(dbh_cm, height_m, coefficients, is_urban, is_palm)
+    # Resolve starting height if missing and needed for next year
+    display_height = height_m
+    if display_height is None or display_height <= 0:
+        display_height = estimate_height(
+            dbh_cm,
+            coefficients.height_model_a,
+            coefficients.height_model_b,
+            coefficients.height_model_c,
+            coefficients.height_model_form,
+        )
 
     dbh_next = dbh_cm + delta_d
-    # Estimate next year's height if we know current height
     height_next = None
-    if height_m is not None and height_m > 0:
-        # Simple proportional height growth
-        height_next = height_m * (dbh_next / dbh_cm) ** 0.5
+    if is_palm:
+        if display_height is not None and display_height > 0:
+            height_next = display_height + delta_h
+    else:
+        if display_height is not None and display_height > 0 and dbh_cm > 0:
+            height_next = display_height * (dbh_next / dbh_cm) ** 0.5
 
-    c_next = calculate_carbon_storage(dbh_next, height_next, coefficients, is_urban, is_palm)
+    # Resolve LAI scaled by site profile selection
+    site_lai_factor = lai / DEFAULT_LAI
+    spec_lai = coefficients.species_lai if hasattr(coefficients, "species_lai") else DEFAULT_SPECIES_LAI
+    resolved_lai = spec_lai * site_lai_factor
+
+    c_now = calculate_carbon_storage(dbh_cm, height_m, coefficients, is_urban, is_palm, resolved_lai)
+    c_next = calculate_carbon_storage(dbh_next, height_next, coefficients, is_urban, is_palm, resolved_lai)
 
     sequestration = c_next - c_now
     was_capped = False
 
     # Apply cap for very large trees
     if c_now >= CARBON_STORAGE_CAP:
-        max_seq = SEQUESTRATION_RATE_CAP * delta_d
+        step_size = delta_h if is_palm else delta_d
+        max_seq = SEQUESTRATION_RATE_CAP * (step_size if step_size > 0 else 1.0)
         if sequestration > max_seq:
             sequestration = max_seq
             was_capped = True

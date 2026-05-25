@@ -179,6 +179,7 @@ class EnrichTreeLayerAlgorithm(QgsProcessingAlgorithm):
                 estimate_stormwater_interception,
                 estimate_pollution_removal,
             )
+            from itree_sea.config import DEFAULT_LAI
         except ImportError:
             raise QgsProcessingException(
                 "The 'itree_sea' package is not installed in QGIS's Python environment.\n"
@@ -260,10 +261,17 @@ class EnrichTreeLayerAlgorithm(QgsProcessingAlgorithm):
             )
 
             # Calculate
-            bio = calculate_biomass(dbh, height, coeffs, condition=condition, is_palm=is_palm)
-            seq = calculate_sequestration(dbh, height, coeffs, growth_rate=growth_rate, is_palm=is_palm)
-            storm = estimate_stormwater_interception(dbh, lai)
-            poll = estimate_pollution_removal(dbh, lai)
+            bio = calculate_biomass(dbh, height, coeffs, condition=condition, is_palm=is_palm, lai=lai)
+            seq = calculate_sequestration(dbh, height, coeffs, growth_rate=growth_rate, is_palm=is_palm, lai=lai)
+            
+            # Resolve LAI and crown modifier for stormwater and pollution
+            site_lai_factor = lai / DEFAULT_LAI
+            spec_lai = coeffs.species_lai if coeffs else DEFAULT_LAI
+            resolved_lai = spec_lai * site_lai_factor
+            crown_modifier = coeffs.crown_modifier if coeffs else None
+            
+            storm = estimate_stormwater_interception(dbh, resolved_lai, crown_modifier=crown_modifier)
+            poll = estimate_pollution_removal(dbh, resolved_lai, crown_modifier=crown_modifier)
 
             # Build output feature
             out_feat = QgsFeature(out_fields)

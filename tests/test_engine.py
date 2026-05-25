@@ -204,6 +204,23 @@ class TestSequestration:
         )
         assert result.annual_sequestration_kg >= 0.0
 
+    def test_palm_sequestration_height_based(self, coconut_coefficients):
+        result = calculate_sequestration(
+            25.0, 10.0, coconut_coefficients, is_palm=True
+        )
+        assert result.annual_sequestration_kg > 0.0
+        assert result.dbh_end_cm == 25.0  # Palm DBH doesn't grow
+        # Coconut palm height growth = 0.3m, so AGB should increase because height grows from 10.0 to 10.3m
+
+    def test_sequestration_continuous_growth_rate(self, angsana_coefficients):
+        # Angsana has true_growth_rate_cm = 1.1
+        # Moderate growth category is normally 1.0, but we use the true rate 1.1
+        result = calculate_sequestration(
+            30.0, 12.0, angsana_coefficients, growth_rate="slow"
+        )
+        # dbh_end_cm should be 30.0 + 1.1 = 31.1, NOT 30.0 + 0.5 (slow)
+        assert result.dbh_end_cm == 31.1
+
 
 # ── Stormwater ──
 

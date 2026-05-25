@@ -272,6 +272,7 @@ def enrich_geodataframe(
             coefficients=coeffs,
             condition=condition,
             is_palm=is_palm,
+            lai=lai,
         )
 
         # Sequestration
@@ -281,13 +282,22 @@ def enrich_geodataframe(
             coefficients=coeffs,
             growth_rate=growth_rate,
             is_palm=is_palm,
+            lai=lai,
         )
 
+        # Resolve LAI and crown modifier for stormwater and pollution
+        from itree_sea.config import DEFAULT_LAI
+        site_lai_factor = lai / DEFAULT_LAI
+        spec_lai = coeffs.species_lai if coeffs else DEFAULT_LAI
+        resolved_lai = spec_lai * site_lai_factor
+        
+        crown_modifier = coeffs.crown_modifier if coeffs else None
+
         # Stormwater
-        stormwater = estimate_stormwater_interception(dbh, lai)
+        stormwater = estimate_stormwater_interception(dbh, resolved_lai, crown_modifier=crown_modifier)
 
         # Pollution
-        pollution = estimate_pollution_removal(dbh, lai)
+        pollution = estimate_pollution_removal(dbh, resolved_lai, crown_modifier=crown_modifier)
 
         # Append
         result_cols["agb_kg"].append(bio.agb_kg)
