@@ -1012,9 +1012,9 @@ with tab3:
         # Check if coordinates look like lat/lng or local (already projected or not)
         is_geo = summary_df["y"].between(-90, 90).all() and summary_df["x"].between(-180, 180).all()
         
-        # Interchangeable basemap styles selection at the top of the map
-        col_m_space, col_m_style, col_m_opacity = st.columns([2, 1, 1])
-        with col_m_style:
+        # Layout map controls in 3 columns
+        col_m1, col_m2, col_m3 = st.columns(3)
+        with col_m1:
             basemap_options = [
                 t("basemap_dark"),
                 t("basemap_osm"),
@@ -1029,16 +1029,15 @@ with tab3:
                 key="basemap_style_select",
                 help=t("basemap_style_help")
             )
-        style_map = {
-            t("basemap_dark"): "carto-darkmatter",
-            t("basemap_osm"): "open-street-map",
-            t("basemap_light"): "carto-positron",
-            t("basemap_satellite"): "satellite-esri",
-            t("basemap_none"): "white-bg"
-        }
-        style_key = style_map[basemap_style]
-        
-        with col_m_opacity:
+            style_map = {
+                t("basemap_dark"): "carto-darkmatter",
+                t("basemap_osm"): "open-street-map",
+                t("basemap_light"): "carto-positron",
+                t("basemap_satellite"): "satellite-esri",
+                t("basemap_none"): "white-bg"
+            }
+            style_key = style_map[basemap_style]
+
             tree_opacity = st.slider(
                 t("tree_opacity"),
                 min_value=0.1,
@@ -1047,6 +1046,36 @@ with tab3:
                 step=0.05,
                 key="tree_opacity_slider"
             )
+            
+        with col_m2:
+            map_height = st.slider(
+                t("map_height"),
+                min_value=300,
+                max_value=1200,
+                value=600,
+                step=50,
+                key="map_height_slider"
+            )
+            
+        with col_m3:
+            map_width_mode = st.selectbox(
+                t("map_width_mode"),
+                [t("width_fit"), t("width_custom")],
+                index=0,
+                key="map_width_mode_select"
+            )
+            use_container_width = True
+            map_width = None
+            if map_width_mode == t("width_custom"):
+                use_container_width = False
+                map_width = st.slider(
+                    t("map_width"),
+                    min_value=300,
+                    max_value=1600,
+                    value=800,
+                    step=50,
+                    key="map_width_slider"
+                )
 
         # Determine if CAD coordinates are in UTM range (Indonesia)
         # Easting (X) in [100000, 900000] and Northing (Y) in [8000000, 10000000]
@@ -1148,7 +1177,7 @@ with tab3:
                     title=t("map_title_geo"),
                     opacity=tree_opacity,
                 )
-                fig.update_layout(**PLOT_LAYOUT, height=600, clickmode="event+select")
+                fig.update_layout(**PLOT_LAYOUT, height=map_height, clickmode="event+select")
                 if style_key == "satellite-esri":
                     fig.update_layout(
                         mapbox=dict(
@@ -1187,7 +1216,7 @@ with tab3:
                     title=t("map_title_cad"),
                     opacity=tree_opacity,
                 )
-                fig.update_layout(**PLOT_LAYOUT, height=600, clickmode="event+select")
+                fig.update_layout(**PLOT_LAYOUT, height=map_height, clickmode="event+select")
                 fig.update_layout(mapbox=dict(
                     center=dict(lat=map_df["lat"].mean(), lon=map_df["lon"].mean())
                 ))
@@ -1216,10 +1245,13 @@ with tab3:
                     color_discrete_sequence=COLORS,
                     opacity=tree_opacity,
                 )
-                fig.update_layout(**PLOT_LAYOUT, height=600, clickmode="event+select")
+                fig.update_layout(**PLOT_LAYOUT, height=map_height, clickmode="event+select")
                 fig.update_yaxes(scaleanchor="x", scaleratio=1)
 
-            event_data = st.plotly_chart(fig, use_container_width=True, on_select="rerun")
+            if not use_container_width and map_width is not None:
+                fig.update_layout(width=map_width)
+
+            event_data = st.plotly_chart(fig, use_container_width=use_container_width, on_select="rerun")
             
             # Map Export Section
             col_exp_check, col_exp_btn = st.columns([2, 1])
