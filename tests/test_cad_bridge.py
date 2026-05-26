@@ -115,3 +115,30 @@ def test_no_regression_existing_files():
         layers2 = ["LA-POHON"]
         entries2 = extract_planting_blocks(doc2, layers2)
         assert len(entries2) == 289
+
+
+def test_schedule_generation_includes_common_name(tmp_path):
+    from itree_sea.database import init_db, seed_from_csv
+    from itree_sea.cad_bridge import PlantingEntry, generate_schedule
+    from itree_sea.config import SEED_CSV_PATH
+    
+    db_path = tmp_path / "test.db"
+    init_db(db_path)
+    seed_from_csv(SEED_CSV_PATH, db_path)
+    
+    entries = [
+        PlantingEntry(
+            block_name="Mahoni",
+            species_name="Swietenia macrophylla",
+            dbh_cm=15.0,
+            height_m=None,
+            x=10.0,
+            y=20.0,
+            layer="L-PLNT-TREE-PROP",
+            handle="test_h1",
+        )
+    ]
+    df = generate_schedule(entries, forecast_years=1, db_path=db_path)
+    assert "common_name" in df.columns
+    # Check that common_name is populated and not None/empty
+    assert df["common_name"].iloc[0] == "Mahogany"

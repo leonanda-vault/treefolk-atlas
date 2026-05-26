@@ -202,7 +202,7 @@ def compute_simulation(
         sim_schedule = baseline_schedule.copy()
     else:
         sim_schedule = pd.DataFrame(columns=[
-            "tree_id", "block_name", "species", "x", "y", "layer",
+            "tree_id", "block_name", "species", "common_name", "x", "y", "layer",
             "year", "dbh_cm", "height_m", "carbon_storage_kg", "carbon_seq_kg",
             "co2_storage_kg", "co2_seq_kg", "o2_production_kg_yr", "epa_gasoline_liters_yr",
             "epa_km_driven_yr", "stormwater_l", "pm25_removed_g",
@@ -257,11 +257,16 @@ def compute_simulation(
             cle=p.get("cle", cle),
         )
         
+        # Resolve common name for the manual planting
+        sp_rec = lookup_species(scientific_name=p["species"], db_path=db_path)
+        cn = sp_rec.common_name if sp_rec else None
+
         # Add spatial coordinates and identifiers to yearly rows
         for r in sched_rows:
             r["tree_id"] = p["tree_id"]
             r["block_name"] = "MANUAL_PLANTED"
             r["species"] = p["species"]
+            r["common_name"] = cn
             r["x"] = p["x"]
             r["y"] = p["y"]
             r["layer"] = "L-PLNT-TREE-PROP"

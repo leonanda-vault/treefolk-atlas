@@ -257,6 +257,12 @@ def process_file(uploaded_file, forecast_years, selected_layers, site_profile_ke
                 df[new_col] = df[old_col] * multiplier
                 if old_col != new_col:
                     df = df.drop(columns=[old_col])
+        if "common_name" not in df.columns and "species" in df.columns:
+            from itree_sea.database import get_coefficients_batch
+            unique_species = df["species"].dropna().unique().tolist()
+            coeffs_dict = get_coefficients_batch(unique_species)
+            species_to_cn = {sp: c.common_name for sp, c in coeffs_dict.items()}
+            df["common_name"] = df["species"].map(species_to_cn)
         return df, "csv"
 
     return None, None
@@ -480,14 +486,14 @@ if run_btn and uploaded:
             st.error(t("no_data_found"))
 elif sandbox_btn:
     st.session_state.schedule = pd.DataFrame(columns=[
-        "tree_id", "block_name", "species", "x", "y", "layer",
+        "tree_id", "block_name", "species", "common_name", "x", "y", "layer",
         "year", "dbh_cm", "height_m", "carbon_storage_kg", "carbon_seq_kg",
         "co2_storage_kg", "co2_seq_kg", "o2_production_kg_yr", "epa_gasoline_liters_yr",
         "epa_km_driven_yr", "stormwater_l", "pm25_removed_g",
         "no2_removed_g", "o3_removed_g", "so2_removed_g", "match_level"
     ])
     st.session_state.summary = pd.DataFrame(columns=[
-        "tree_id", "block_name", "species", "x", "y", "layer",
+        "tree_id", "block_name", "species", "common_name", "x", "y", "layer",
         "dbh_cm", "height_m", "carbon_storage_kg",
         "co2_storage_kg", "cumulative_seq_kg", "cumulative_co2_seq_kg",
         "cumulative_o2_production_kg", "cumulative_epa_liters", "cumulative_epa_km",
@@ -870,7 +876,9 @@ with tab1:
 
         # Species table
         st.markdown(f"### {t('species_efficiency_breakdown')}")
-        sp_table = (summary_df.groupby("species").agg(
+        if "common_name" not in summary_df.columns:
+            summary_df["common_name"] = None
+        sp_table = (summary_df.groupby(["species", "common_name"], dropna=False).agg(
             count=("tree_id", "size"),
             carbon_kg=("carbon_storage_kg", "sum"),
             avg_carbon=("carbon_storage_kg", "mean"),
@@ -883,6 +891,7 @@ with tab1:
         # Rename columns using t()
         sp_table.columns = [
             t("col_species"),
+            t("col_common_name"),
             t("col_count"),
             t("col_total_carbon"),
             t("col_avg_carbon"),
@@ -1004,12 +1013,14 @@ with tab3:
         is_geo = summary_df["y"].between(-90, 90).all() and summary_df["x"].between(-180, 180).all()
         
         # Interchangeable basemap styles selection at the top of the map
-        col_m_title, col_m_style = st.columns([2, 1])
+        col_m_space, col_m_style, col_m_opacity = st.columns([2, 1, 1])
         with col_m_style:
             basemap_options = [
                 t("basemap_dark"),
                 t("basemap_osm"),
-                t("basemap_light")
+                t("basemap_light"),
+                t("basemap_satellite"),
+                t("basemap_none")
             ]
             basemap_style = st.selectbox(
                 t("basemap_style"),
@@ -1021,9 +1032,21 @@ with tab3:
         style_map = {
             t("basemap_dark"): "carto-darkmatter",
             t("basemap_osm"): "open-street-map",
-            t("basemap_light"): "carto-positron"
+            t("basemap_light"): "carto-positron",
+            t("basemap_satellite"): "satellite-esri",
+            t("basemap_none"): "white-bg"
         }
         style_key = style_map[basemap_style]
+        
+        with col_m_opacity:
+            tree_opacity = st.slider(
+                t("tree_opacity"),
+                min_value=0.1,
+                max_value=1.0,
+                value=0.8,
+                step=0.05,
+                key="tree_opacity_slider"
+            )
 
         # Determine if CAD coordinates are in UTM range (Indonesia)
         # Easting (X) in [100000, 900000] and Northing (Y) in [8000000, 10000000]
@@ -1119,13 +1142,28 @@ with tab3:
                     map_df, lat="lat", lon="lon", color="species",
                     size="dbh_cm",
                     hover_data=["tree_id", "species", "block_name", "dbh_cm", "carbon_storage_kg"],
-                    mapbox_style=style_key,
+                    mapbox_style=style_key if style_key != "satellite-esri" else "white-bg",
                     zoom=15,
                     color_discrete_sequence=COLORS,
                     title=t("map_title_geo"),
+                    opacity=tree_opacity,
                 )
                 fig.update_layout(**PLOT_LAYOUT, height=600, clickmode="event+select")
-                event_data = st.plotly_chart(fig, use_container_width=True, on_select="rerun")
+                if style_key == "satellite-esri":
+                    fig.update_layout(
+                        mapbox=dict(
+                            style="white-bg",
+                            layers=[
+                                {
+                                    "below": "traces",
+                                    "sourcetype": "raster",
+                                    "source": [
+                                        "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
+                                    ]
+                                }
+                            ]
+                        )
+                    )
             elif use_basemap:
                 # Project coordinates
                 map_df = project_coordinates(
@@ -1143,16 +1181,31 @@ with tab3:
                     map_df, lat="lat", lon="lon", color="species",
                     size="dbh_cm",
                     hover_data=["tree_id", "species", "block_name", "dbh_cm", "carbon_storage_kg"],
-                    mapbox_style=style_key,
+                    mapbox_style=style_key if style_key != "satellite-esri" else "white-bg",
                     zoom=17,
                     color_discrete_sequence=COLORS,
                     title=t("map_title_cad"),
+                    opacity=tree_opacity,
                 )
                 fig.update_layout(**PLOT_LAYOUT, height=600, clickmode="event+select")
                 fig.update_layout(mapbox=dict(
                     center=dict(lat=map_df["lat"].mean(), lon=map_df["lon"].mean())
                 ))
-                event_data = st.plotly_chart(fig, use_container_width=True, on_select="rerun")
+                if style_key == "satellite-esri":
+                    fig.update_layout(
+                        mapbox=dict(
+                            style="white-bg",
+                            layers=[
+                                {
+                                    "below": "traces",
+                                    "sourcetype": "raster",
+                                    "source": [
+                                        "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
+                                    ]
+                                }
+                            ]
+                        )
+                    )
             else:
                 # Local coordinate scatter plot
                 fig = px.scatter(
@@ -1161,10 +1214,41 @@ with tab3:
                     hover_data=["tree_id", "species", "block_name", "dbh_cm", "carbon_storage_kg"],
                     title=t("map_title_local"),
                     color_discrete_sequence=COLORS,
+                    opacity=tree_opacity,
                 )
                 fig.update_layout(**PLOT_LAYOUT, height=600, clickmode="event+select")
                 fig.update_yaxes(scaleanchor="x", scaleratio=1)
-                event_data = st.plotly_chart(fig, use_container_width=True, on_select="rerun")
+
+            event_data = st.plotly_chart(fig, use_container_width=True, on_select="rerun")
+            
+            # Map Export Section
+            col_exp_check, col_exp_btn = st.columns([2, 1])
+            with col_exp_check:
+                exclude_basemap = st.checkbox(t("exclude_basemap_export"), value=False, key="exclude_basemap_chk")
+            with col_exp_btn:
+                # Prepare export figure
+                export_fig = go.Figure(fig)
+                if exclude_basemap:
+                    # Remove basemap for export
+                    if hasattr(export_fig.layout, "mapbox") and export_fig.layout.mapbox:
+                        export_fig.update_layout(
+                            mapbox=dict(
+                                style="white-bg",
+                                layers=[]
+                            )
+                        )
+                # Export figure to HTML bytes
+                html_io = io.StringIO()
+                export_fig.write_html(html_io, include_plotlyjs="cdn")
+                html_bytes = html_io.getvalue().encode("utf-8")
+                
+                st.download_button(
+                    label=t("export_map_html"),
+                    data=html_bytes,
+                    file_name="treefolk_atlas_map.html",
+                    mime="text/html",
+                    use_container_width=True
+                )
 
             # Interactive point actions container
             selected_tree_ids = []
@@ -1723,7 +1807,9 @@ with tab4:
         st.markdown(f"### {t('species_table_title')}")
         
         # Calculate per-tree metrics for all species
-        sp_perf = summary_df.groupby("species").agg(
+        if "common_name" not in summary_df.columns:
+            summary_df["common_name"] = None
+        sp_perf = summary_df.groupby(["species", "common_name"], dropna=False).agg(
             count=("tree_id", "size"),
             avg_dbh_growth_cm=("dbh_growth_cm", "mean"),
             avg_height_growth_m=("height_growth_m", "mean"),
@@ -1763,6 +1849,7 @@ with tab4:
 
         sp_agg_display.columns = [
             t("col_species"),
+            t("col_common_name"),
             t("col_rank"),
             t("col_count"),
             t("col_score"),
@@ -1809,7 +1896,9 @@ with tab5:
             st.caption(t("trees_count", n=len(summary_df)))
 
         with col3:
-            sp_agg = (summary_df.groupby("species").agg(
+            if "common_name" not in summary_df.columns:
+                summary_df["common_name"] = None
+            sp_agg = (summary_df.groupby(["species", "common_name"], dropna=False).agg(
                 count=("tree_id", "size"),
                 avg_dbh_growth_cm=("dbh_growth_cm", "mean"),
                 avg_height_growth_m=("height_growth_m", "mean"),
@@ -1836,6 +1925,7 @@ with tab5:
             "tree_id": t("col_tree_id"),
             "block_name": t("col_block"),
             "species": t("col_species"),
+            "common_name": t("col_common_name"),
             "x": t("col_x"),
             "y": t("col_y"),
             "layer": t("layer_filter"),

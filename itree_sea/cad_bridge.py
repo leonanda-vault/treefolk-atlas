@@ -171,6 +171,7 @@ class ScheduleRow:
     tree_id: int
     block_name: str
     species: str
+    common_name: Optional[str]
     x: float
     y: float
     layer: str
@@ -840,6 +841,7 @@ def generate_schedule(
                 "tree_id": tree_id,
                 "block_name": entry.block_name,
                 "species": entry.species_name,
+                "common_name": coeffs.common_name if coeffs.common_name else (sp_record.common_name if sp_record else None),
                 "x": entry.x,
                 "y": entry.y,
                 "layer": entry.layer,

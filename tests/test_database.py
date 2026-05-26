@@ -170,3 +170,7 @@ class TestGetCoefficients:
         c = get_coefficients(db_path=seeded_db)
         assert isinstance(c, AllometricCoefficients)
         assert c.match_level == "default"
+
+    def test_common_name_lookup(self, seeded_db):
+        c = get_coefficients(scientific_name="Pterocarpus indicus", db_path=seeded_db)
+        assert c.common_name == "Angsana"

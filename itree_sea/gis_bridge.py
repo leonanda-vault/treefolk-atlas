@@ -225,6 +225,7 @@ def enrich_geodataframe(
     """
     # Prepare result columns
     result_cols = {
+        "common_name": [],
         "agb_kg": [],
         "bgb_kg": [],
         "total_biomass_kg": [],
@@ -303,6 +304,8 @@ def enrich_geodataframe(
         pollution = estimate_pollution_removal(dbh, resolved_lai, crown_modifier=crown_modifier, height_m=height)
 
         # Append
+        common_name = coeffs.common_name if coeffs.common_name else (sp_record.common_name if sp_record else None)
+        result_cols["common_name"].append(common_name)
         result_cols["agb_kg"].append(bio.agb_kg)
         result_cols["bgb_kg"].append(bio.bgb_kg)
         result_cols["total_biomass_kg"].append(bio.total_biomass_kg)

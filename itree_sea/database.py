@@ -95,6 +95,7 @@ class AllometricCoefficients:
     dbh_max: float = 120.0
     growth_k: float = 0.05
     species: Optional[str] = None
+    common_name: Optional[str] = None
 
 
 # ──────────────────────────────────────────────────────────────────────
@@ -433,6 +434,17 @@ def get_coefficients(
     try:
         cur = conn.cursor()
 
+        # Resolve common_name from species_lookup first
+        common_name = None
+        if scientific_name:
+            cur.execute(
+                "SELECT common_name FROM species_lookup WHERE LOWER(scientific_name) = LOWER(?)",
+                (scientific_name.strip(),),
+            )
+            res = cur.fetchone()
+            if res:
+                common_name = res[0]
+
         # ── Attempt 1: exact species match ──
         if scientific_name:
             cur.execute(
@@ -442,7 +454,7 @@ def get_coefficients(
             )
             row = cur.fetchone()
             if row:
-                return _row_to_coefficients(row, match_level="species", conn=conn)
+                return _row_to_coefficients(row, match_level="species", conn=conn, common_name=common_name)
 
         # ── Attempt 2: genus-level match ──
         genus_query = genus
@@ -459,7 +471,7 @@ def get_coefficients(
             )
             row = cur.fetchone()
             if row:
-                return _row_to_coefficients(row, match_level="genus", conn=conn)
+                return _row_to_coefficients(row, match_level="genus", conn=conn, common_name=common_name)
 
             # Try any row for that genus (species-level entry from a relative)
             cur.execute(
@@ -470,14 +482,16 @@ def get_coefficients(
             )
             row = cur.fetchone()
             if row:
-                return _row_to_coefficients(row, match_level="genus", conn=conn)
+                return _row_to_coefficients(row, match_level="genus", conn=conn, common_name=common_name)
 
         # ── Attempt 3: pantropical default ──
         logger.warning(
             "No coefficients found for species=%s genus=%s — using pantropical defaults",
             scientific_name, genus,
         )
-        return _default_coefficients()
+        default_coeffs = _default_coefficients()
+        default_coeffs.common_name = common_name
+        return default_coeffs
 
     finally:
         conn.close()
@@ -548,7 +562,8 @@ def _resolve_genus_averages(conn: sqlite3.Connection, genus_name: str) -> Dict[s
 def _row_to_coefficients(
     row: sqlite3.Row, 
     match_level: str, 
-    conn: Optional[sqlite3.Connection] = None
+    conn: Optional[sqlite3.Connection] = None,
+    common_name: Optional[str] = None
 ) -> AllometricCoefficients:
     """Convert a database row to an AllometricCoefficients dataclass, checking for null morphology fields."""
     true_growth = row["true_growth_rate_cm"] if "true_growth_rate_cm" in row.keys() else None
@@ -609,6 +624,7 @@ def _row_to_coefficients(
         dbh_max=dbh_max_val,
         growth_k=growth_k_val,
         species=row["species"] if "species" in row.keys() else None,
+        common_name=common_name,
     )
 
 
@@ -633,5 +649,6 @@ def _default_coefficients() -> AllometricCoefficients:
         dbh_max=DEFAULT_DBH_MAX,
         growth_k=DEFAULT_GROWTH_K,
         species=None,
+        common_name=None,
     )
 
