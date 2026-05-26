@@ -899,6 +899,56 @@ with tab1:
         ]
         st.dataframe(sp_table, use_container_width=True, hide_index=True)
 
+        st.markdown("---")
+        st.markdown(f"### {t('species_size_dist')}")
+        
+        col_c, col_d = st.columns(2)
+        with col_c:
+            # Table: Species, Common Name, Count, Min DBH, Max DBH, Mean DBH
+            if "common_name" not in summary_df.columns:
+                summary_df["common_name"] = None
+                
+            dbh_table = (summary_df.groupby(["species", "common_name"], dropna=False).agg(
+                count=("dbh_cm", "size"),
+                min_dbh=("dbh_cm", "min"),
+                max_dbh=("dbh_cm", "max"),
+                mean_dbh=("dbh_cm", "mean")
+            ).reset_index())
+            
+            dbh_table["min_dbh"] = dbh_table["min_dbh"].round(1)
+            dbh_table["max_dbh"] = dbh_table["max_dbh"].round(1)
+            dbh_table["mean_dbh"] = dbh_table["mean_dbh"].round(1)
+            
+            dbh_table.columns = [
+                t("col_species"),
+                t("col_common_name"),
+                t("col_tree_count"),
+                t("col_min_dbh"),
+                t("col_max_dbh"),
+                t("col_mean_dbh")
+            ]
+            st.dataframe(dbh_table, use_container_width=True, hide_index=True)
+            
+        with col_d:
+            # Diagram: Box plot of DBH by species with jittered points showing all individual trees
+            fig_box = px.box(
+                summary_df,
+                x="species",
+                y="dbh_cm",
+                color="species",
+                points="all", # shows all points overlaid on box
+                title=t("dbh_dist_chart_title"),
+                color_discrete_sequence=COLORS,
+                hover_data=["tree_id", "dbh_cm", "species"]
+            )
+            fig_box.update_layout(
+                **PLOT_LAYOUT,
+                showlegend=False,
+                xaxis_title=t("col_species"),
+                yaxis_title="DBH (cm)"
+            )
+            st.plotly_chart(fig_box, use_container_width=True)
+
 
 # ══════════════════════════════════════════════════════════════════════
 # TAB 2: ANALYSIS
