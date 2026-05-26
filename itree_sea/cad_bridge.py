@@ -143,6 +143,8 @@ BLOCK_NAME_MAP: Dict[str, str] = {
     "cendana":             "Santalum album",
     "meranti":             "Shorea leprosula",
     "sawo duren":          "Chrysophyllum cainito",
+    "tabebuya":            "Handroanthus impetiginosus",
+    "akasia":              "Acacia mangium",
 }
 
 
@@ -190,14 +192,154 @@ class ScheduleRow:
     match_level: str
 
 
+@dataclass
+class ParsedTextLabel:
+    """A parsed text or MTEXT label from the CAD drawing."""
+    x: float
+    y: float
+    tree_id: Optional[int]
+    elevation: Optional[float]
+    species: Optional[str]
+    dbh: Optional[float]
+    layer: str
+
+
 # ──────────────────────────────────────────────────────────────────────
-# MTEXT diameter parser
+# MTEXT diameter parser and label parser
 # ──────────────────────────────────────────────────────────────────────
 
 # Pattern: %%C followed by digits (the %%C is AutoCAD's ⌀ symbol)
 _DIAMETER_PATTERN = re.compile(r"%%[Cc]\s*(\d+(?:\.\d+)?)\s*cm", re.IGNORECASE)
 # Also try plain "D XX" or "Ø XX" patterns
 _DIAMETER_ALT = re.compile(r"[ØøDd]\s*[:=]?\s*(\d+(?:\.\d+)?)\s*cm", re.IGNORECASE)
+
+
+def _parse_mtext_label(text: str) -> Tuple[Optional[int], Optional[float], Optional[str], Optional[float]]:
+    """Parse MTEXT plaintext to extract tree details.
+
+    Returns: (tree_id, elevation_or_height, species_name, dbh_cm)
+    """
+    lines = [line.strip() for line in text.split('\n') if line.strip()]
+
+    tree_id = None
+    elevation = None
+    dbh = None
+    species_parts = []
+
+    # Diameter regex patterns
+    # Pattern 1: with symbol (Ø, %C, D)
+    symbol_pat = re.compile(r"(?:%%[Cc]|Ø|ø|[Dd]\s*[:=]?)\s*(\d+(?:\.\d+)?)\s*(?:cm|mm)?", re.IGNORECASE)
+    # Pattern 2: just number + cm
+    plain_cm_pat = re.compile(r"\b(\d+(?:\.\d+)?)\s*cm\b", re.IGNORECASE)
+
+    for line in lines:
+        # Check for diameter first
+        match = symbol_pat.search(line)
+        if not match:
+            match = plain_cm_pat.search(line)
+
+        if match:
+            try:
+                dbh = float(match.group(1))
+            except (ValueError, TypeError):
+                pass
+            # Remove diameter part from line to see if there is species text on the same line
+            cleaned_line = line.replace(match.group(0), "").strip()
+            if cleaned_line:
+                species_parts.append(cleaned_line)
+            continue
+
+        # Check if it's a pure integer (ID)
+        if re.match(r'^\d+$', line):
+            try:
+                tree_id = int(line)
+            except (ValueError, TypeError):
+                pass
+            continue
+
+        # Check if it's a float (Elevation/Height)
+        cleaned_float = line.replace(" ", "")
+        if re.match(r'^\d+\.\d+$', cleaned_float):
+            try:
+                elevation = float(cleaned_float)
+            except (ValueError, TypeError):
+                pass
+            continue
+
+        # Otherwise, it's a species name part
+        species_parts.append(line)
+
+    species_name = " ".join(species_parts).strip()
+    species_name = re.sub(r'\s+', ' ', species_name)
+    if not species_name:
+        species_name = None
+
+    return tree_id, elevation, species_name, dbh
+
+
+def _extract_text_labels(doc) -> List[ParsedTextLabel]:
+    """Extract and parse all MTEXT and TEXT entities from the document."""
+    if not HAS_EZDXF:
+        return []
+
+    msp = doc.modelspace()
+    labels = []
+
+    for entity in msp:
+        if entity.dxftype() not in ("MTEXT", "TEXT"):
+            continue
+
+        # Get plaintext content
+        if entity.dxftype() == "MTEXT":
+            try:
+                text = entity.plain_text()
+            except Exception:
+                try:
+                    text = entity.text
+                except Exception:
+                    text = getattr(entity.dxf, 'text', '')
+        else: # TEXT
+            text = getattr(entity, 'text', None) or getattr(entity.dxf, 'text', '')
+
+        if not text:
+            continue
+
+        tree_id, elevation, species, dbh = _parse_mtext_label(text)
+
+        try:
+            pt = entity.dxf.insert
+            labels.append(ParsedTextLabel(
+                x=pt.x,
+                y=pt.y,
+                tree_id=tree_id,
+                elevation=elevation,
+                species=species,
+                dbh=dbh,
+                layer=entity.dxf.layer,
+            ))
+        except Exception:
+            continue
+
+    logger.info("Extracted and parsed %d MTEXT/TEXT labels", len(labels))
+    return labels
+
+
+def _find_nearest_label(
+    x: float, y: float,
+    labels: List[ParsedTextLabel],
+    max_distance: float = 5.0,
+) -> Optional[ParsedTextLabel]:
+    """Find the nearest parsed MTEXT/TEXT label to a given point."""
+    best_dist = max_distance
+    best_label = None
+
+    for label in labels:
+        dist = math.sqrt((x - label.x) ** 2 + (y - label.y) ** 2)
+        if dist < best_dist:
+            best_dist = dist
+            best_label = label
+
+    return best_label
 
 
 def _extract_mtext_diameters(doc) -> Dict[str, float]:
@@ -387,16 +529,46 @@ def parse_dxf(dxf_path: Union[str, Path]) -> "ezdxf.document.Drawing":
     return doc
 
 
+def _is_explicit_skip(block_name: str) -> bool:
+    """Check if the normalized block name maps to None in BLOCK_NAME_MAP."""
+    norm = block_name.strip().lower()
+    if "$0$" in norm:
+        norm = norm.split("$0$")[-1]
+    if norm.startswith("phn "):
+        norm = norm[4:]
+    if norm.startswith("la_"):
+        norm = norm[3:]
+    norm = _HEIGHT_SUFFIX_PATTERN.sub("", norm)
+    for sfx in ("_raz_warna", "_raz", "_warna"):
+        if norm.endswith(sfx):
+            norm = norm[:-len(sfx)]
+            break
+    norm = norm.strip().strip("_").strip()
+
+    skips = {"pohon eksisting", "luar", "batas area"}
+    if norm in skips:
+        return True
+    for suffix in (" xtg", " pindah", " baru", " eksisting"):
+        if norm.endswith(suffix):
+            stripped = norm[:-len(suffix)].strip()
+            if stripped in skips:
+                return True
+    return False
+
+
 def extract_planting_blocks(
     doc: "ezdxf.document.Drawing",
     target_layers: Optional[List[str]] = None,
 ) -> List[PlantingEntry]:
     """Extract tree planting entries from DXF INSERT entities.
 
-    Supports two modes:
+    Supports three extraction modes:
       1. Standard: INSERTs with SPECIES/CALIPER ATTRIB tags.
       2. Block-name: INSERTs where the block name maps to a species
          via BLOCK_NAME_MAP. Diameter is sourced from nearby MTEXT.
+      3. Proximity-based MTEXT/TEXT: INSERTs with generic block names
+         where details (species, diameter) are parsed from a nearby
+         MTEXT or TEXT entity.
 
     Parameters
     ----------
@@ -417,9 +589,12 @@ def extract_planting_blocks(
 
     # Pre-parse MTEXT diameter labels
     diameter_labels = _extract_mtext_diameters(doc)
+    # Pre-parse all MTEXT/TEXT labels for proximity matching
+    text_labels = _extract_text_labels(doc)
 
     attrib_found = 0
     blockname_found = 0
+    mtext_found = 0
 
     # Pre-compute block geometry offsets relative to their base points
     block_offsets = {}
@@ -533,33 +708,58 @@ def extract_planting_blocks(
 
         # ── MODE 2: Block-name-based extraction ──
         resolved = _resolve_block_name(block_name)
-        if resolved is None:
-            continue  # Unknown block or explicitly skipped
+        if resolved is not None:
+            species_name, embedded_height = resolved
 
-        species_name, embedded_height = resolved
+            # Find diameter from nearby MTEXT
+            dbh = DEFAULT_PLANTING_DBH
+            if diameter_labels:
+                mtext_diam = _find_nearest_diameter(x, y, diameter_labels)
+                if mtext_diam is not None:
+                    dbh = mtext_diam
 
-        # Find diameter from nearby MTEXT
-        dbh = DEFAULT_PLANTING_DBH
-        if diameter_labels:
-            mtext_diam = _find_nearest_diameter(x, y, diameter_labels)
-            if mtext_diam is not None:
-                dbh = mtext_diam
+            entries.append(PlantingEntry(
+                block_name=block_name,
+                species_name=species_name,
+                dbh_cm=dbh,
+                height_m=embedded_height,
+                x=x, y=y,
+                layer=layer,
+                handle=insert.dxf.handle,
+            ))
+            blockname_found += 1
+            continue
 
-        entries.append(PlantingEntry(
-            block_name=block_name,
-            species_name=species_name,
-            dbh_cm=dbh,
-            height_m=embedded_height,
-            x=x, y=y,
-            layer=layer,
-            handle=insert.dxf.handle,
-        ))
-        blockname_found += 1
+        # If block name is an explicit skip (e.g. "pohon eksisting"), skip it
+        if _is_explicit_skip(block_name):
+            continue
+
+        # ── MODE 3: MTEXT/TEXT proximity-based extraction ──
+        nearest_label = _find_nearest_label(x, y, text_labels, max_distance=5.0)
+        if nearest_label and nearest_label.species:
+            resolved = _resolve_block_name(nearest_label.species)
+            if resolved:
+                species_name = resolved[0]
+            else:
+                species_name = nearest_label.species
+
+            dbh = nearest_label.dbh if nearest_label.dbh is not None else DEFAULT_PLANTING_DBH
+
+            entries.append(PlantingEntry(
+                block_name=block_name,
+                species_name=species_name,
+                dbh_cm=dbh,
+                height_m=None,  # Elevation in label is ground level elevation, not tree height
+                x=x, y=y,
+                layer=layer,
+                handle=insert.dxf.handle,
+            ))
+            mtext_found += 1
 
     logger.info(
         "Extracted %d planting entries from DXF "
-        "(%d from attribs, %d from block names). Ignored %d legend blocks.",
-        len(entries), attrib_found, blockname_found, ignored_legend_count,
+        "(%d from attribs, %d from block names, %d from MTEXT proximity). Ignored %d legend blocks.",
+        len(entries), attrib_found, blockname_found, mtext_found, ignored_legend_count,
     )
     return entries
 
