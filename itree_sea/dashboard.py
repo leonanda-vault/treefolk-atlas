@@ -1154,6 +1154,14 @@ with tab3:
                 step=50,
                 key="map_height_slider"
             )
+            map_font_size = st.slider(
+                t("map_font_size"),
+                min_value=8,
+                max_value=30,
+                value=12,
+                step=1,
+                key="map_font_size_slider"
+            )
             
         with col_m3:
             map_width_mode = st.selectbox(
@@ -1174,6 +1182,12 @@ with tab3:
                     step=50,
                     key="map_width_slider"
                 )
+            legend_position = st.selectbox(
+                t("map_legend_position"),
+                [t("legend_right"), t("legend_bottom")],
+                index=0,
+                key="map_legend_position_select"
+            )
 
         # Determine if CAD coordinates are in UTM range (Indonesia)
         # Easting (X) in [100000, 900000] and Northing (Y) in [8000000, 10000000]
@@ -1352,6 +1366,35 @@ with tab3:
                     paper_bgcolor=bg_color
                 )
                 fig.update_yaxes(scaleanchor="x", scaleratio=1)
+
+            # Determine dynamic font color and layout legend position
+            is_light_basemap = basemap_style in [t("basemap_light"), t("basemap_osm"), t("basemap_none_white")]
+            font_color = "#222222" if is_light_basemap else "#ffffff"
+            
+            if legend_position == t("legend_right"):
+                legend_config = dict(
+                    orientation="v",
+                    yanchor="middle",
+                    y=0.5,
+                    xanchor="left",
+                    x=1.02
+                )
+            else:
+                legend_config = dict(
+                    orientation="h",
+                    yanchor="top",
+                    y=-0.15,
+                    xanchor="center",
+                    x=0.5
+                )
+
+            fig.update_layout(
+                font=dict(family="Inter", size=map_font_size, color=font_color),
+                legend=dict(
+                    bgcolor="rgba(0,0,0,0)",
+                    **legend_config
+                )
+            )
 
             if not use_container_width and map_width is not None:
                 fig.update_layout(width=map_width)
