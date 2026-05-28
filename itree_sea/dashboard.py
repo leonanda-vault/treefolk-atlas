@@ -1354,9 +1354,31 @@ with tab3:
                 # Use RdYlGn (Red-Yellow-Green) colorscale
                 color_kwargs = {"color_continuous_scale": "RdYlGn"}
             elif map_color_by == t("color_by_rank"):
-                color_col = "eco_efficiency_rank"
-                # Use RdYlGn_r (reversed) so rank 1 (best) is Green and worse ranks are Red
-                color_kwargs = {"color_continuous_scale": "RdYlGn_r"}
+                # Use discrete <number> <species> format
+                def get_rank_label(sp):
+                    rank = species_ranks.get(sp, 999)
+                    return f"{rank} {sp}"
+                
+                map_df["eco_efficiency_rank_label"] = map_df["species"].apply(get_rank_label)
+                color_col = "eco_efficiency_rank_label"
+                
+                # Sort unique species by rank to construct the ordered category list
+                unique_sp = map_df["species"].dropna().unique()
+                sorted_sp = sorted(unique_sp, key=lambda sp: species_ranks.get(sp, 999))
+                category_order = [f"{species_ranks.get(sp, 999)} {sp}" for sp in sorted_sp]
+                
+                N = len(category_order)
+                if N <= 1:
+                    color_sequence = ["#2ca02c"]
+                else:
+                    import plotly.colors
+                    # Sample RdYlGn_r (reversed so rank 1 is green, rank N is red)
+                    color_sequence = plotly.colors.sample_colorscale("RdYlGn_r", [i / (N - 1) for i in range(N)])
+                
+                color_kwargs = {
+                    "color_discrete_sequence": color_sequence,
+                    "category_orders": {color_col: category_order}
+                }
 
             # Build rich hover columns list
             hover_cols = ["tree_id", "species", "block_name", "dbh_cm", "carbon_storage_kg"]
@@ -1364,6 +1386,8 @@ with tab3:
                 hover_cols.append("eco_efficiency_score")
             if "eco_efficiency_rank" in map_df.columns:
                 hover_cols.append("eco_efficiency_rank")
+            if "eco_efficiency_rank_label" in map_df.columns:
+                hover_cols.append("eco_efficiency_rank_label")
         
         event_data = None
         if not map_df.empty:
