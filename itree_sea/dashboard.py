@@ -1144,6 +1144,12 @@ with tab3:
                 step=0.05,
                 key="tree_opacity_slider"
             )
+            map_color_by = st.selectbox(
+                t("map_color_by"),
+                [t("color_by_species"), t("color_by_score"), t("color_by_rank")],
+                index=0,
+                key="map_color_by_select"
+            )
             
         with col_m2:
             map_height = st.slider(
@@ -1268,6 +1274,66 @@ with tab3:
         # Prepare map dataframe
         # Filter out removed trees from map so they disappear
         map_df = summary_df[~summary_df["layer"].eq("L-PLNT-TREE-RMVL")].copy()
+
+        # Calculate species performance scores and ranks to map back to individual trees
+        species_ranks = {}
+        species_scores = {}
+        if not summary_df.empty:
+            try:
+                # Group by species to get average performance
+                agg_dict = {}
+                for col_name, agg_func in [
+                    ("carbon_storage_kg", "mean"),
+                    ("carbon_seq_kg", "mean"),
+                    ("stormwater_l", "mean"),
+                    ("pm25_removed_g", "mean"),
+                    ("no2_removed_g", "mean")
+                ]:
+                    if col_name in summary_df.columns:
+                        agg_dict[col_name] = agg_func
+                
+                if agg_dict:
+                    sp_perf = summary_df.groupby("species", dropna=False).agg(**agg_dict)
+                    
+                    # Normalize components relative to max in dataset to calculate Eco-Efficiency Score (0-100)
+                    norm_components = pd.DataFrame(index=sp_perf.index)
+                    for col in agg_dict.keys():
+                        mx = sp_perf[col].max()
+                        norm_components[col] = sp_perf[col] / mx if mx > 0 else 0.0
+                    
+                    sp_perf["score"] = norm_components.mean(axis=1) * 100
+                    sp_perf = sp_perf.sort_values("score", ascending=False)
+                    sp_perf["rank"] = range(1, len(sp_perf) + 1)
+                    
+                    species_ranks = sp_perf["rank"].to_dict()
+                    species_scores = sp_perf["score"].to_dict()
+            except Exception:
+                pass
+
+        # Apply coloring selection
+        color_col = "species"
+        color_kwargs = {"color_discrete_sequence": COLORS}
+
+        if not map_df.empty:
+            # Map values back to individual trees
+            map_df["eco_efficiency_score"] = map_df["species"].map(species_scores).fillna(0.0).round(1)
+            map_df["eco_efficiency_rank"] = map_df["species"].map(species_ranks).fillna(999)
+            
+            if map_color_by == t("color_by_score"):
+                color_col = "eco_efficiency_score"
+                # Use RdYlGn (Red-Yellow-Green) colorscale
+                color_kwargs = {"color_continuous_scale": "RdYlGn"}
+            elif map_color_by == t("color_by_rank"):
+                color_col = "eco_efficiency_rank"
+                # Use RdYlGn_r (reversed) so rank 1 (best) is Green and worse ranks are Red
+                color_kwargs = {"color_continuous_scale": "RdYlGn_r"}
+
+            # Build rich hover columns list
+            hover_cols = ["tree_id", "species", "block_name", "dbh_cm", "carbon_storage_kg"]
+            if "eco_efficiency_score" in map_df.columns:
+                hover_cols.append("eco_efficiency_score")
+            if "eco_efficiency_rank" in map_df.columns:
+                hover_cols.append("eco_efficiency_rank")
         
         event_data = None
         if not map_df.empty:
@@ -1280,14 +1346,14 @@ with tab3:
                 
                 # Plotly Express Mapbox with free basemap
                 fig = px.scatter_mapbox(
-                    map_df, lat="lat", lon="lon", color="species",
+                    map_df, lat="lat", lon="lon", color=color_col,
                     size="dbh_cm",
-                    hover_data=["tree_id", "species", "block_name", "dbh_cm", "carbon_storage_kg"],
+                    hover_data=hover_cols,
                     mapbox_style=style_key if style_key != "satellite-esri" else "white-bg",
                     zoom=15,
-                    color_discrete_sequence=COLORS,
                     title=t("map_title_geo"),
                     opacity=tree_opacity,
+                    **color_kwargs
                 )
                 fig.update_layout(**PLOT_LAYOUT, height=map_height, clickmode="event+select")
                 if style_key == "satellite-esri":
@@ -1319,14 +1385,14 @@ with tab3:
                 )
                 
                 fig = px.scatter_mapbox(
-                    map_df, lat="lat", lon="lon", color="species",
+                    map_df, lat="lat", lon="lon", color=color_col,
                     size="dbh_cm",
-                    hover_data=["tree_id", "species", "block_name", "dbh_cm", "carbon_storage_kg"],
+                    hover_data=hover_cols,
                     mapbox_style=style_key if style_key != "satellite-esri" else "white-bg",
                     zoom=17,
-                    color_discrete_sequence=COLORS,
                     title=t("map_title_cad"),
                     opacity=tree_opacity,
+                    **color_kwargs
                 )
                 fig.update_layout(**PLOT_LAYOUT, height=map_height, clickmode="event+select")
                 fig.update_layout(mapbox=dict(
@@ -1350,12 +1416,12 @@ with tab3:
             else:
                 # Local coordinate scatter plot
                 fig = px.scatter(
-                    map_df, x="x", y="y", color="species",
+                    map_df, x="x", y="y", color=color_col,
                     size="dbh_cm",
-                    hover_data=["tree_id", "species", "block_name", "dbh_cm", "carbon_storage_kg"],
+                    hover_data=hover_cols,
                     title=t("map_title_local"),
-                    color_discrete_sequence=COLORS,
                     opacity=tree_opacity,
+                    **color_kwargs
                 )
                 bg_color = style_key["layers"][0]["paint"]["background-color"] if isinstance(style_key, dict) else "rgba(0,0,0,0)"
                 fig.update_layout(
