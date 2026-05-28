@@ -1070,7 +1070,9 @@ with tab3:
                 t("basemap_osm"),
                 t("basemap_light"),
                 t("basemap_satellite"),
-                t("basemap_none")
+                t("basemap_none_transparent"),
+                t("basemap_none_black"),
+                t("basemap_none_white")
             ]
             basemap_style = st.selectbox(
                 t("basemap_style"),
@@ -1079,12 +1081,58 @@ with tab3:
                 key="basemap_style_select",
                 help=t("basemap_style_help")
             )
+            
+            # Custom style specifications for blank maps to support transparent and black overlays
+            white_style = {
+                "version": 8,
+                "sources": {},
+                "layers": [
+                    {
+                        "id": "background",
+                        "type": "background",
+                        "paint": {
+                            "background-color": "#ffffff"
+                        }
+                    }
+                ]
+            }
+
+            black_style = {
+                "version": 8,
+                "sources": {},
+                "layers": [
+                    {
+                        "id": "background",
+                        "type": "background",
+                        "paint": {
+                            "background-color": "#000000"
+                        }
+                    }
+                ]
+            }
+
+            transparent_style = {
+                "version": 8,
+                "sources": {},
+                "layers": [
+                    {
+                        "id": "background",
+                        "type": "background",
+                        "paint": {
+                            "background-color": "rgba(0,0,0,0)"
+                        }
+                    }
+                ]
+            }
+
             style_map = {
                 t("basemap_dark"): "carto-darkmatter",
                 t("basemap_osm"): "open-street-map",
                 t("basemap_light"): "carto-positron",
                 t("basemap_satellite"): "satellite-esri",
-                t("basemap_none"): "white-bg"
+                t("basemap_none_transparent"): transparent_style,
+                t("basemap_none_black"): black_style,
+                t("basemap_none_white"): white_style
             }
             style_key = style_map[basemap_style]
 
@@ -1295,7 +1343,14 @@ with tab3:
                     color_discrete_sequence=COLORS,
                     opacity=tree_opacity,
                 )
-                fig.update_layout(**PLOT_LAYOUT, height=map_height, clickmode="event+select")
+                bg_color = style_key["layers"][0]["paint"]["background-color"] if isinstance(style_key, dict) else "rgba(0,0,0,0)"
+                fig.update_layout(
+                    **PLOT_LAYOUT,
+                    height=map_height,
+                    clickmode="event+select",
+                    plot_bgcolor=bg_color,
+                    paper_bgcolor=bg_color
+                )
                 fig.update_yaxes(scaleanchor="x", scaleratio=1)
 
             if not use_container_width and map_width is not None:
@@ -1313,9 +1368,23 @@ with tab3:
                 if exclude_basemap:
                     # Remove basemap for export
                     if hasattr(export_fig.layout, "mapbox") and export_fig.layout.mapbox:
+                        # Use the current style_key if it's a dict (custom blank backgrounds), otherwise default to transparent
+                        bg_style = style_key if isinstance(style_key, dict) else {
+                            "version": 8,
+                            "sources": {},
+                            "layers": [
+                                {
+                                    "id": "background",
+                                    "type": "background",
+                                    "paint": {
+                                        "background-color": "rgba(0,0,0,0)"
+                                    }
+                                }
+                            ]
+                        }
                         export_fig.update_layout(
                             mapbox=dict(
-                                style="white-bg",
+                                style=bg_style,
                                 layers=[]
                             )
                         )
