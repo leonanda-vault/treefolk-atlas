@@ -775,6 +775,64 @@ if schedule_df is not None and not schedule_df.empty and "layer" in schedule_df.
 if summary_df is not None and not summary_df.empty and "layer" in summary_df.columns:
     summary_df = summary_df[summary_df["layer"] != "L-PLNT-TREE-RMVL"]
 
+# Pre-calculate species eco-efficiency scores and ranks to ensure perfect consistency between map and tables
+species_ranks = {}
+species_scores = {}
+sp_perf_display = pd.DataFrame()
+
+if summary_df is not None and not summary_df.empty:
+    try:
+        if "common_name" not in summary_df.columns:
+            summary_df["common_name"] = None
+            
+        # Group by species to get average performance. We aggregate common_name
+        # to ensure that if a species has multiple names or NaN, they are treated as a single species.
+        agg_kwargs = {
+            "count": ("tree_id", "size"),
+            "avg_dbh_growth_cm": ("dbh_growth_cm", "mean") if "dbh_growth_cm" in summary_df.columns else ("tree_id", lambda x: 0.0),
+            "avg_height_growth_m": ("height_growth_m", "mean") if "height_growth_m" in summary_df.columns else ("tree_id", lambda x: 0.0),
+            "total_carbon_kg": ("carbon_storage_kg", "sum") if "carbon_storage_kg" in summary_df.columns else ("tree_id", lambda x: 0.0),
+            "total_stormwater_l": ("stormwater_l", "sum") if "stormwater_l" in summary_df.columns else ("tree_id", lambda x: 0.0),
+            "common_name": ("common_name", lambda x: next((v for v in x if pd.notna(v) and v != "None" and v != ""), "None"))
+        }
+        
+        possible_cols = {
+            "avg_carbon_kg": ("carbon_storage_kg", "mean"),
+            "avg_seq_kg": ("carbon_seq_kg", "mean"),
+            "avg_stormwater_l": ("stormwater_l", "mean"),
+            "avg_pm25_g": ("pm25_removed_g", "mean"),
+            "avg_no2_g": ("no2_removed_g", "mean"),
+        }
+        
+        norm_cols = []
+        for name, (src_col, agg_func) in possible_cols.items():
+            if src_col in summary_df.columns:
+                agg_kwargs[name] = (src_col, agg_func)
+                norm_cols.append(name)
+                
+        sp_perf_base = summary_df.groupby("species", dropna=False).agg(**agg_kwargs).copy()
+
+        # Normalize components relative to max in dataset to calculate Eco-Efficiency Score (0-100)
+        norm_components = pd.DataFrame(index=sp_perf_base.index)
+        for col in norm_cols:
+            mx = sp_perf_base[col].max()
+            norm_components[col] = sp_perf_base[col] / mx if mx > 0 else 0.0
+            
+        sp_perf_base["eco_efficiency_score"] = norm_components.mean(axis=1) * 100
+
+        # Sort by eco-efficiency to get ranks
+        sp_perf_base = sp_perf_base.sort_values("eco_efficiency_score", ascending=False)
+        sp_perf_base["efficiency_rank"] = range(1, len(sp_perf_base) + 1)
+        
+        species_ranks = sp_perf_base["efficiency_rank"].to_dict()
+        species_scores = sp_perf_base["eco_efficiency_score"].to_dict()
+        
+        # Reset index to make "species" a column
+        sp_perf_display = sp_perf_base.reset_index()
+    except Exception as e:
+        st.warning(f"Error calculating species eco-efficiency: {e}")
+
+
 tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
     t("tab_overview"),
     t("tab_analysis"),
@@ -888,15 +946,17 @@ with tab1:
         sp_table["avg_carbon"] = sp_table["avg_carbon"].round(1)
         sp_table["stormwater_l"] = sp_table["stormwater_l"].round(0)
         
-        # Rename columns using t()
-        sp_table.columns = [
-            t("col_species"),
-            t("col_common_name"),
-            t("col_count"),
-            t("col_total_carbon"),
-            t("col_avg_carbon"),
-            t("col_stormwater")
-        ]
+        # Explicitly order and rename columns
+        sp_table = sp_table[[
+            "species", "common_name", "count", "carbon_kg", "avg_carbon", "stormwater_l"
+        ]].rename(columns={
+            "species": t("col_species"),
+            "common_name": t("col_common_name"),
+            "count": t("col_count"),
+            "carbon_kg": t("col_total_carbon"),
+            "avg_carbon": t("col_avg_carbon"),
+            "stormwater_l": t("col_stormwater")
+        })
         st.dataframe(sp_table, use_container_width=True, hide_index=True)
 
         st.markdown("---")
@@ -919,14 +979,17 @@ with tab1:
             dbh_table["max_dbh"] = dbh_table["max_dbh"].round(1)
             dbh_table["mean_dbh"] = dbh_table["mean_dbh"].round(1)
             
-            dbh_table.columns = [
-                t("col_species"),
-                t("col_common_name"),
-                t("col_tree_count"),
-                t("col_min_dbh"),
-                t("col_max_dbh"),
-                t("col_mean_dbh")
-            ]
+            # Explicitly order and rename columns
+            dbh_table = dbh_table[[
+                "species", "common_name", "count", "min_dbh", "max_dbh", "mean_dbh"
+            ]].rename(columns={
+                "species": t("col_species"),
+                "common_name": t("col_common_name"),
+                "count": t("col_tree_count"),
+                "min_dbh": t("col_min_dbh"),
+                "max_dbh": t("col_max_dbh"),
+                "mean_dbh": t("col_mean_dbh")
+            })
             st.dataframe(dbh_table, use_container_width=True, hide_index=True)
             
         with col_d:
@@ -1275,40 +1338,7 @@ with tab3:
         # Filter out removed trees from map so they disappear
         map_df = summary_df[~summary_df["layer"].eq("L-PLNT-TREE-RMVL")].copy()
 
-        # Calculate species performance scores and ranks to map back to individual trees
-        species_ranks = {}
-        species_scores = {}
-        if not summary_df.empty:
-            try:
-                # Group by species to get average performance
-                agg_dict = {}
-                for col_name, agg_func in [
-                    ("carbon_storage_kg", "mean"),
-                    ("carbon_seq_kg", "mean"),
-                    ("stormwater_l", "mean"),
-                    ("pm25_removed_g", "mean"),
-                    ("no2_removed_g", "mean")
-                ]:
-                    if col_name in summary_df.columns:
-                        agg_dict[col_name] = agg_func
-                
-                if agg_dict:
-                    sp_perf = summary_df.groupby("species", dropna=False).agg(**agg_dict)
-                    
-                    # Normalize components relative to max in dataset to calculate Eco-Efficiency Score (0-100)
-                    norm_components = pd.DataFrame(index=sp_perf.index)
-                    for col in agg_dict.keys():
-                        mx = sp_perf[col].max()
-                        norm_components[col] = sp_perf[col] / mx if mx > 0 else 0.0
-                    
-                    sp_perf["score"] = norm_components.mean(axis=1) * 100
-                    sp_perf = sp_perf.sort_values("score", ascending=False)
-                    sp_perf["rank"] = range(1, len(sp_perf) + 1)
-                    
-                    species_ranks = sp_perf["rank"].to_dict()
-                    species_scores = sp_perf["score"].to_dict()
-            except Exception:
-                pass
+
 
         # Apply coloring selection
         color_col = "species"
@@ -2066,62 +2096,41 @@ with tab4:
 
         st.markdown(f"### {t('species_table_title')}")
         
-        # Calculate per-tree metrics for all species
-        if "common_name" not in summary_df.columns:
-            summary_df["common_name"] = None
-        sp_perf = summary_df.groupby(["species", "common_name"], dropna=False).agg(
-            count=("tree_id", "size"),
-            avg_dbh_growth_cm=("dbh_growth_cm", "mean"),
-            avg_height_growth_m=("height_growth_m", "mean"),
-            avg_carbon_kg=("carbon_storage_kg", "mean"),
-            avg_seq_kg=("carbon_seq_kg", "mean"),
-            avg_stormwater_l=("stormwater_l", "mean"),
-            avg_pm25_g=("pm25_removed_g", "mean"),
-            avg_no2_g=("no2_removed_g", "mean"),
-            total_carbon_kg=("carbon_storage_kg", "sum"),
-            total_stormwater_l=("stormwater_l", "sum")
-        ).copy()
-
-        # Normalize components relative to max in dataset to calculate Eco-Efficiency Score (0-100)
-        norm_components = pd.DataFrame(index=sp_perf.index)
-        for col in ["avg_carbon_kg", "avg_seq_kg", "avg_stormwater_l", "avg_pm25_g", "avg_no2_g"]:
-            mx = sp_perf[col].max()
-            norm_components[col] = sp_perf[col] / mx if mx > 0 else 0.0
+        # Select, order, and rename columns for display explicitly from the pre-calculated single-source-of-truth DataFrame
+        if not sp_perf_display.empty:
+            target_cols = [
+                "species",
+                "common_name",
+                "efficiency_rank",
+                "count",
+                "eco_efficiency_score",
+                "avg_dbh_growth_cm",
+                "avg_height_growth_m",
+                "avg_carbon_kg",
+                "avg_stormwater_l",
+                "total_carbon_kg",
+                "total_stormwater_l"
+            ]
+            existing_cols = [c for c in target_cols if c in sp_perf_display.columns]
             
-        sp_perf["eco_efficiency_score"] = norm_components.mean(axis=1) * 100
-
-        # Sort by eco-efficiency to get ranks
-        sp_perf = sp_perf.sort_values("eco_efficiency_score", ascending=False)
-        sp_perf["efficiency_rank"] = range(1, len(sp_perf) + 1)
-
-        # Select, order, and rename columns for display
-        sp_agg_display = sp_perf[[
-            "efficiency_rank",
-            "count",
-            "eco_efficiency_score",
-            "avg_dbh_growth_cm",
-            "avg_height_growth_m",
-            "avg_carbon_kg",
-            "avg_stormwater_l",
-            "total_carbon_kg",
-            "total_stormwater_l"
-        ]].reset_index()
-
-        sp_agg_display.columns = [
-            t("col_species"),
-            t("col_common_name"),
-            t("col_rank"),
-            t("col_count"),
-            t("col_score"),
-            t("col_avg_dbh_growth"),
-            t("col_avg_height_growth"),
-            t("col_avg_carbon_storage"),
-            t("col_avg_stormwater"),
-            t("col_total_carbon_storage"),
-            t("col_total_stormwater")
-        ]
-
-        st.dataframe(sp_agg_display.round(1), use_container_width=True, hide_index=True)
+            rename_map = {
+                "species": t("col_species"),
+                "common_name": t("col_common_name"),
+                "efficiency_rank": t("col_rank"),
+                "count": t("col_count"),
+                "eco_efficiency_score": t("col_score"),
+                "avg_dbh_growth_cm": t("col_avg_dbh_growth"),
+                "avg_height_growth_m": t("col_avg_height_growth"),
+                "avg_carbon_kg": t("col_avg_carbon_storage"),
+                "avg_stormwater_l": t("col_avg_stormwater"),
+                "total_carbon_kg": t("col_total_carbon_storage"),
+                "total_stormwater_l": t("col_total_stormwater")
+            }
+            # Only map the columns we actually have
+            rename_map = {k: v for k, v in rename_map.items() if k in existing_cols}
+            
+            sp_agg_display = sp_perf_display[existing_cols].rename(columns=rename_map)
+            st.dataframe(sp_agg_display.round(1), use_container_width=True, hide_index=True)
     else:
         st.info(t("species_breakdown_dxf_required"))
 
